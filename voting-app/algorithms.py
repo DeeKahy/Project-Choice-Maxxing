@@ -1,23 +1,4 @@
-"""
-Voting Algorithms part type thing
-
-votes: list of dicts from CSV, each with:
-    - "username": str # (probably)
-    - "option_{id}": score (str) # i mean do whatever you want
-    
-
-max_score: int (5 for 0-5 scale, or something gotta discuss)
-
-Return a dict with some algorithm results. The templates expect this structure:
-{
-    "score_voting": [(name, score), ...],        # sorted list of tuples, also this is probably the easiest to implement
-    "approval_voting": [(name, count), ...],     # sorted list of tuples
-    "star_voting": {"winner": str, "finalists": [str, str], "runoff": (int, int)}, # This one is really weird, so idk.
-    "schulze": [(name, wins), ...],              # sorted list of tuples
-    "minimax": [(name, margin), ...],            # sorted list of tuples
-    "kemeny_young": {"ranking": [str, ...], "score": int}, # Also weird
-}
-"""
+from itertools import permutations
 
 def parse_votes(votes, options):
     """Convert CSV vote rows to usable format"""
@@ -30,31 +11,9 @@ def parse_votes(votes, options):
         parsed.append({"username": vote["username"], "scores": scores})
     return parsed
 
-def calculate_all_results(votes, options, max_score):
-    """Calculate results for all voting methods"""
-    if not votes or not options:
-        return {}
 
-    option_names = [o["name"] for o in options]
-    parsed = parse_votes(votes, options)
-    threshold = max_score // 2 + 1
-        
-    return {
-        "score_voting": score_voting(parsed, option_names),
-        "approval_voting": [],
-        "star_voting": {"winner": None, "finalists": [], "runoff": (0, 0)}, # this one is chatgpt
-        "schulze": [],
-        "minimax": [],
-        "kemeny_young": {"ranking": [], "score": 0},
-        "approval_threshold": threshold
-    }    
+# ============== METHODS ==============
 
-def schulze_method(parsed_votes, option_names):
-    """Schulze/Beatpath method"""
-        # TODO: do some fucning magic, and be my magic man!
-
-
-# am using this bad boy to test frontend.
 def score_voting(parsed_votes, option_names):
     """Simple sum of scores"""
     totals = {name: 0 for name in option_names}
@@ -62,3 +21,17 @@ def score_voting(parsed_votes, option_names):
         for name, score in vote["scores"].items():
             totals[name] += score
     return sorted(totals.items(), key=lambda x: -x[1])
+
+# ============== MAIN ENTRY ==============
+
+def calculate_all_results(votes, options, max_score):
+    """Calculate results for all voting methods"""
+    if not votes or not options:
+        return {}
+    
+    option_names = [o["name"] for o in options]
+    parsed = parse_votes(votes, options)
+
+    return {
+        "score_voting": score_voting(parsed, option_names),
+    }
