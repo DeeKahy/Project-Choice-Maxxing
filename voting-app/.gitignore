@@ -9,8 +9,8 @@ venv/
 .venv/
 ENV/
 
-# Data files (optional - remove if you want to track data)
-# data/*.csv
+# Data files 
+data/*.csv
 
 # IDE
 .vscode/
