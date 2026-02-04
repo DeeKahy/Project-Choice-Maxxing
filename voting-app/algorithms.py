@@ -36,7 +36,7 @@ def schulze_method(parsed_votes, option_names):
                 if preferences[(option_a,option_b)] >= preferences[(option_b,option_a)]:
                     # A is better than B
                     ranking[option_a] += 1
-    return sorted(ranking.items(), reverse=True)
+    return sorted(ranking.items(), reverse=True, key=lambda x: x[1])
                 
 # am using this bad boy to test frontend.
 def score_voting(parsed_votes, option_names):
@@ -45,7 +45,7 @@ def score_voting(parsed_votes, option_names):
     for vote in parsed_votes:
         for name, score in vote["scores"].items():
             totals[name] += score
-    return sorted(totals.items(), key=lambda x: -x[1])
+    return sorted(totals.items(), reverse=True, key=lambda x: x[1])
 
 # ============== MAIN ENTRY ==============
 
