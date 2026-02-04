@@ -1,0 +1,113 @@
+{% extends "base.html" %}
+{% block title %}Results: {{ poll.title }}{% endblock %}
+{% block content %}
+<h1>{{ poll.title }}</h1>
+{% if poll.description %}<p class="text-muted">{{ poll.description }}</p>{% endif %}
+
+<p class="text-muted mb-1">{{ votes|length }} vote{{ 's' if votes|length != 1 else '' }} cast</p>
+
+{% if results %}
+
+<!-- Score Voting -->
+<div class="card">
+    <h3>Score Voting</h3>
+    <p class="text-muted" style="font-size: 0.875rem;">Sum of all scores - higher is better</p>
+    {% set max_score_val = results.score_voting[0][1] if results.score_voting else 1 %}
+    {% for name, score in results.score_voting %}
+    <div class="result-row">
+        <span class="result-rank">{{ loop.index }}</span>
+        <span style="flex: 1;">
+            {{ name }}
+            <div class="result-bar" style="width: {{ (score / max_score_val * 100)|int }}%;"></div>
+        </span>
+        <span><strong>{{ score }}</strong></span>
+    </div>
+    {% endfor %}
+</div>
+
+<!-- Approval Voting -->
+<div class="card">
+    <h3>Approval Voting</h3>
+    <p class="text-muted" style="font-size: 0.875rem;">Count of scores ≥ {{ results.approval_threshold }}</p>
+    {% set max_approvals = results.approval_voting[0][1] if results.approval_voting else 1 %}
+    {% for name, approvals in results.approval_voting %}
+    <div class="result-row">
+        <span class="result-rank">{{ loop.index }}</span>
+        <span style="flex: 1;">
+            {{ name }}
+            <div class="result-bar" style="width: {{ (approvals / max_approvals * 100)|int if max_approvals > 0 else 0 }}%;"></div>
+        </span>
+        <span><strong>{{ approvals }}</strong></span>
+    </div>
+    {% endfor %}
+</div>
+
+<!-- STAR Voting -->
+<div class="card">
+    <h3>STAR Voting</h3>
+    <p class="text-muted" style="font-size: 0.875rem;">Score Then Automatic Runoff</p>
+    {% if results.star_voting.winner %}
+    <div style="text-align: center; padding: 1rem;">
+        <p style="font-size: 1.5rem;"><strong>{{ results.star_voting.winner }}</strong></p>
+        <p class="text-muted">
+            Finalists: {{ results.star_voting.finalists[0] }} vs {{ results.star_voting.finalists[1] }}<br>
+            Runoff: {{ results.star_voting.runoff[0] }} - {{ results.star_voting.runoff[1] }}
+        </p>
+    </div>
+    {% else %}
+    <p class="text-muted">Not enough data</p>
+    {% endif %}
+</div>
+
+<!-- Schulze -->
+<div class="card">
+    <h3>Schulze Method</h3>
+    <p class="text-muted" style="font-size: 0.875rem;">Beatpath/Condorcet winner</p>
+    {% for name, wins in results.schulze %}
+    <div class="result-row">
+        <span class="result-rank">{{ loop.index }}</span>
+        <span style="flex: 1;">{{ name }}</span>
+        <span><strong>{{ wins }}</strong> wins</span>
+    </div>
+    {% endfor %}
+</div>
+
+<!-- Minimax -->
+<div class="card">
+    <h3>Minimax</h3>
+    <p class="text-muted" style="font-size: 0.875rem;">Candidate with smallest worst defeat</p>
+    {% for name, margin in results.minimax %}
+    <div class="result-row">
+        <span class="result-rank">{{ loop.index }}</span>
+        <span style="flex: 1;">{{ name }}</span>
+        <span>margin: <strong>{{ margin }}</strong></span>
+    </div>
+    {% endfor %}
+</div>
+
+<!-- Kemeny-Young -->
+<div class="card">
+    <h3>Kemeny-Young</h3>
+    <p class="text-muted" style="font-size: 0.875rem;">Optimal consensus ranking</p>
+    {% if results.kemeny_young.score >= 0 %}
+        {% for name in results.kemeny_young.ranking %}
+        <div class="result-row">
+            <span class="result-rank">{{ loop.index }}</span>
+            <span style="flex: 1;">{{ name }}</span>
+        </div>
+        {% endfor %}
+    {% else %}
+    <p class="text-muted">Too many options (>10) to calculate</p>
+    {% endif %}
+</div>
+
+{% else %}
+<div class="card">
+    <p class="text-muted" style="text-align: center;">No votes yet. Results will appear once voting begins.</p>
+</div>
+{% endif %}
+
+<div class="mt-1">
+    <a href="{{ url_for('vote', poll_id=poll.id) }}" class="btn btn-block">Vote on this poll</a>
+</div>
+{% endblock %}
