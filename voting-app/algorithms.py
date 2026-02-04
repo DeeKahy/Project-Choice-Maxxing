@@ -57,14 +57,14 @@ def schulze_method(parsed_votes, option_names):
     # fill out the preferences
     for dict in parsed_votes:
         # username = dict["username"]
-        scores = dict["scores"]
+        scores = dict["scores"].items()
         for option_a, score_a in scores:
             for option_b, score_b in scores:
                 if option_a != option_b and score_a > score_b:
                     preferences[(option_a,option_b)] += 1
                     
     # ranking maps options to the number of things they are preferred to.
-    ranking = {option : 0 for option, _ in scores}  # highest rank is the best one
+    ranking = {option : 0 for option, _ in option_names}  # highest rank is the best one
     for option_a in option_names:
         for option_b in option_names:
             if option_a != option_b:
