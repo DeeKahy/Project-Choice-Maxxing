@@ -1,9 +1,10 @@
-from flask import Flask, render_template, request, redirect, session, url_for
 import csv
 import os
-from datetime import datetime
-from algorithms import calculate_all_results
 import secrets
+from datetime import datetime
+
+from algorithms import calculate_all_results
+from flask import Flask, redirect, render_template, request, session, url_for
 
 app = Flask(__name__)
 app.secret_key = secrets.token_hex(16)
