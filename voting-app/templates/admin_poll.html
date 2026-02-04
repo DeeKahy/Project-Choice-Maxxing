@@ -29,18 +29,14 @@
                 {{ 'Close Poll' if poll.is_open == 'true' else 'Reopen Poll' }}
             </button>
         </form>
-        <form
-            method="POST"
-            action=""
-            style="display: inline"
-            onsubmit="return confirm('Are you sure you want to delete this poll?');"
-        >
-            <button type="submit" class="btn btn-danger btn-small">
-                Delete Poll
-            </button>
+        <form method="POST" action="{{ url_for('delete_poll', poll_id=poll.id) }}" style="display: inline;" 
+              onsubmit="return confirm('Are you sure you want to delete this poll?');">
+            <button type="submit" class="btn btn-danger btn-small">Delete Poll</button>
         </form>
     </div>
 </div>
+
+
 
 <!-- Voting Link -->
 <div class="card">
@@ -82,7 +78,8 @@
         <form
             method="POST"
             action=""
-            onsubmit="return confirm('Delete vote from {{ vote.username }}?');"
+            onsubmit="return confirm('
+            Delete vote from {{ vote.username }}?');"
         >
             <button type="submit" class="btn btn-danger btn-small">x</button>
         </form>
