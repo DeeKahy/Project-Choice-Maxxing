@@ -1,0 +1,237 @@
+/* Reset & Base */
+* {
+    box-sizing: border-box;
+    margin: 0;
+    padding: 0;
+}
+
+body {
+    font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
+    line-height: 1.6;
+    padding: 1rem;
+    max-width: 600px;
+    margin: 0 auto;
+    background: #f5f5f5;
+}
+
+/* Typography */
+h1 { font-size: 1.5rem; margin-bottom: 1rem; }
+h2 { font-size: 1.25rem; margin: 1.5rem 0 0.75rem; }
+h3 { font-size: 1rem; margin: 1rem 0 0.5rem; }
+
+/* Cards */
+.card {
+    background: white;
+    border-radius: 8px;
+    padding: 1rem;
+    margin-bottom: 1rem;
+    box-shadow: 0 1px 3px rgba(0,0,0,0.1);
+}
+
+/* Forms */
+input[type="text"], input[type="password"], select {
+    width: 100%;
+    padding: 0.75rem;
+    border: 1px solid #ddd;
+    border-radius: 4px;
+    font-size: 1rem;
+    margin-bottom: 0.75rem;
+}
+
+input[type="text"]:focus, input[type="password"]:focus, select:focus {
+    outline: none;
+    border-color: #007bff;
+    box-shadow: 0 0 0 2px rgba(0, 123, 255, 0.25);
+}
+
+label {
+    display: block;
+    margin-bottom: 0.25rem;
+    font-weight: 500;
+}
+
+/* Buttons */
+button, .btn {
+    display: inline-block;
+    padding: 0.75rem 1.5rem;
+    background: #007bff;
+    color: white;
+    border: none;
+    border-radius: 4px;
+    font-size: 1rem;
+    cursor: pointer;
+    text-decoration: none;
+    text-align: center;
+}
+
+button:hover, .btn:hover { background: #0056b3; }
+.btn-danger { background: #dc3545; }
+.btn-danger:hover { background: #c82333; }
+.btn-secondary { background: #6c757d; }
+.btn-secondary:hover { background: #545b62; }
+.btn-small { padding: 0.4rem 0.8rem; font-size: 0.875rem; }
+.btn-block { display: block; width: 100%; }
+
+/* Score selector */
+.score-selector {
+    display: flex;
+    gap: 0.25rem;
+    flex-wrap: wrap;
+}
+
+.score-selector input[type="radio"] { display: none; }
+
+.score-selector label {
+    width: 2.5rem;
+    height: 2.5rem;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    background: #e9ecef;
+    border-radius: 4px;
+    cursor: pointer;
+    font-weight: bold;
+    transition: all 0.15s ease;
+}
+
+.score-selector label:hover {
+    background: #dee2e6;
+}
+
+.score-selector input:checked + label {
+    background: #007bff;
+    color: white;
+}
+
+/* Vote option card */
+.option-card {
+    background: #f8f9fa;
+    border-radius: 8px;
+    padding: 1rem;
+    margin-bottom: 0.75rem;
+}
+
+.option-card h3 {
+    margin: 0 0 0.5rem;
+}
+
+/* Results */
+.result-row {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    padding: 0.5rem 0;
+    border-bottom: 1px solid #eee;
+}
+
+.result-row:last-child { border-bottom: none; }
+
+.result-rank {
+    font-weight: bold;
+    color: #007bff;
+    width: 2rem;
+    flex-shrink: 0;
+}
+
+.result-bar {
+    height: 8px;
+    background: #007bff;
+    border-radius: 4px;
+    margin-top: 0.25rem;
+    min-width: 4px;
+}
+
+/* Voter list */
+.voter-item {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    padding: 0.75rem;
+    background: #f8f9fa;
+    border-radius: 4px;
+    margin-bottom: 0.5rem;
+}
+
+/* Header row */
+.header-row {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    margin-bottom: 1rem;
+}
+
+.header-row h1 {
+    margin-bottom: 0;
+}
+
+/* Poll header */
+.poll-header {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+}
+
+.poll-header h3 {
+    margin: 0;
+}
+
+/* Status badges */
+.status-badge {
+    padding: 0.25rem 0.5rem;
+    border-radius: 4px;
+    font-size: 0.75rem;
+    font-weight: bold;
+    text-transform: uppercase;
+}
+
+.status-open {
+    background: #d4edda;
+    color: #155724;
+}
+
+.status-closed {
+    background: #f8d7da;
+    color: #721c24;
+}
+
+/* Utilities */
+.text-muted { color: #6c757d; }
+.text-danger { color: #dc3545; }
+.text-success { color: #28a745; }
+.mt-1 { margin-top: 1rem; }
+.mb-1 { margin-bottom: 1rem; }
+.error { 
+    color: #dc3545; 
+    margin-bottom: 1rem;
+    padding: 0.75rem;
+    background: #f8d7da;
+    border-radius: 4px;
+}
+
+/* Copy link */
+.copy-link {
+    display: flex;
+    gap: 0.5rem;
+}
+
+.copy-link input {
+    flex: 1;
+    margin-bottom: 0;
+}
+
+/* Responsive adjustments */
+@media (max-width: 400px) {
+    body {
+        padding: 0.5rem;
+    }
+    
+    .score-selector label {
+        width: 2rem;
+        height: 2rem;
+        font-size: 0.875rem;
+    }
+    
+    button, .btn {
+        padding: 0.6rem 1rem;
+    }
+}

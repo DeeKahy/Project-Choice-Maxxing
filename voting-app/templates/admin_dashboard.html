@@ -1,0 +1,35 @@
+{% extends "base.html" %}
+{% block title %}Admin Dashboard{% endblock %}
+{% block content %}
+<div class="header-row">
+    <h1>Polls</h1>
+    <a href="{{ url_for('admin_logout') }}" class="btn btn-secondary btn-small">Logout</a>
+</div>
+
+<a href="{{ url_for('admin_create') }}" class="btn btn-block mb-1">+ Create New Poll</a>
+
+{% if polls %}
+    {% for poll in polls %}
+    <div class="card">
+        <div class="poll-header">
+            <h3>{{ poll.title }}</h3>
+            <span class="status-badge {% if poll.is_open == 'true' %}status-open{% else %}status-closed{% endif %}">
+                {{ 'Open' if poll.is_open == 'true' else 'Closed' }}
+            </span>
+        </div>
+        {% if poll.description %}
+        <p class="text-muted">{{ poll.description }}</p>
+        {% endif %}
+        <p class="text-muted" style="font-size: 0.875rem;">Created: {{ poll.created_at[:10] }}</p>
+        <div class="mt-1">
+            <a href="{{ url_for('admin_poll', poll_id=poll.id) }}" class="btn btn-small">Manage</a>
+            <a href="" class="btn btn-secondary btn-small" target="_blank">Vote Link</a>
+        </div>
+    </div>
+    {% endfor %}
+{% else %}
+    <div class="card">
+        <p class="text-muted">No polls yet. Create your first one!</p>
+    </div>
+{% endif %}
+{% endblock %}

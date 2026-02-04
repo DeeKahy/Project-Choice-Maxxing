@@ -1,23 +1,4 @@
-"""
-Voting Algorithms part type thing
-
-votes: list of dicts from CSV, each with:
-    - "username": str # (probably)
-    - "option_{id}": score (str) # i mean do whatever you want
-    
-
-max_score: int (5 for 0-5 scale, or something gotta discuss)
-
-Return a dict with some algorithm results. The templates expect this structure:
-{
-    "score_voting": [(name, score), ...],        # sorted list of tuples, also this is probably the easiest to implement
-    "approval_voting": [(name, count), ...],     # sorted list of tuples
-    "star_voting": {"winner": str, "finalists": [str, str], "runoff": (int, int)}, # This one is really weird, so idk.
-    "schulze": [(name, wins), ...],              # sorted list of tuples
-    "minimax": [(name, margin), ...],            # sorted list of tuples
-    "kemeny_young": {"ranking": [str, ...], "score": int}, # Also weird
-}
-"""
+from itertools import permutations
 
 def parse_votes(votes, options):
     """Convert CSV vote rows to usable format"""
@@ -30,29 +11,56 @@ def parse_votes(votes, options):
         parsed.append({"username": vote["username"], "scores": scores})
     return parsed
 
-def calculate_all_results(votes, options, max_score):
-    """Calculate results for all voting methods"""
-    if not votes or not options:
-        return {}
 
-    option_names = [o["name"] for o in options]
-    parsed = parse_votes(votes, options)
-    threshold = max_score // 2 + 1
-        
-    return {
-        "score_voting": score_voting(parsed, option_names),
-        "approval_voting": [],
-        "star_voting": {"winner": None, "finalists": [], "runoff": (0, 0)}, # this one is chatgpt
-        "schulze": [],
-        "minimax": [],
-        "kemeny_young": {"ranking": [], "score": 0},
-        "approval_threshold": threshold
-    }    
+# ============== METHODS ==============
 
 def schulze_method(parsed_votes, option_names):
     """Schulze/Beatpath method"""
-        # TODO: do some fucning magic, and be my magic man!
+    # preferences maps (A,B) to the number of voters who prefer A to B. Everything starts at 0.
+    preferences = {(A,B) : 0 for A in option_names for B in option_names if A != B}
+    
+    # fill out the preferences
+    for dict in parsed_votes:
+        # username = dict["username"]
+        scores = dict["scores"].items()
+        for option_a, score_a in scores:
+            for option_b, score_b in scores:
+                if option_a != option_b and score_a > score_b:
+                    preferences[(option_a,option_b)] += 1
 
+    # implementation of strongest path strength computation from https://en.wikipedia.org/wiki/Schulze_method
+    path_strength = {}
+    for i in option_names:
+        for j in option_names:
+            if i != j:
+                path_strength[i,j] = preferences[i,j] - preferences[j,i]
+
+    for k in option_names:
+        for i in option_names:
+            if i != k:
+                for j in option_names:
+                    if j != k and j != i:
+                        path_strength[i,j] = max(path_strength[i,j], min(path_strength[i,k], path_strength[k,j]))
+                        
+    # ranking maps options to the number of things they are preferred to.
+    ranking = {option : 0 for option in option_names}  # highest rank is the best one
+    for option_a in option_names:
+        for option_b in option_names:
+            if option_a != option_b:
+                if path_strength[(option_a,option_b)] >= path_strength[(option_b,option_a)]:
+                    # A is better than B
+                    ranking[option_a] += 1
+
+    return tiebreak_with_total_scores(parsed_votes, sorted(ranking.items(), reverse=True, key=lambda x: x[1]))
+    
+def tiebreak_with_total_scores(parsed_votes, ranked_items):
+    """Sort a list of ranked voting options using the total score given to them by voters."""
+    total_scores = {}
+    for dict in parsed_votes:
+        scores = dict["scores"].items()
+        for option, score in scores:
+            total_scores[option] = total_scores.get(option, 0) + score
+    return sorted(ranked_items, reverse=True, key=lambda x: total_scores.get(x[0], 0))
 
 # am using this bad boy to test frontend.
 def score_voting(parsed_votes, option_names):
@@ -61,4 +69,19 @@ def score_voting(parsed_votes, option_names):
     for vote in parsed_votes:
         for name, score in vote["scores"].items():
             totals[name] += score
-    return sorted(totals.items(), key=lambda x: -x[1])
+    return sorted(totals.items(), reverse=True, key=lambda x: x[1])
+
+# ============== MAIN ENTRY ==============
+
+def calculate_all_results(votes, options, max_score):
+    """Calculate results for all voting methods"""
+    if not votes or not options:
+        return {}
+    
+    option_names = [o["name"] for o in options]
+    parsed = parse_votes(votes, options)
+
+    return {
+        "score_voting": score_voting(parsed, option_names),
+        "schulze_method" : schulze_method(parsed, option_names)
+    }

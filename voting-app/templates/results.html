@@ -1,0 +1,46 @@
+{% extends "base.html" %}
+{% block title %}Results: {{ poll.title }}{% endblock %}
+{% block content %}
+<h1>{{ poll.title }}</h1>
+{% if poll.description %}<p class="text-muted">{{ poll.description }}</p>{% endif %}
+
+<p class="text-muted mb-1">{{ votes|length }} vote{{ 's' if votes|length != 1 else '' }} cast</p>
+
+{% if results %}
+<!-- Score Voting -->
+<div class="card">
+    <h3>Score Voting</h3>
+    <p class="text-muted" style="font-size: 0.875rem">Sum of all scores</p>
+    {% for name, score in results.score_voting %}
+    <div class="result-row">
+        <span class="result-rank">{{ loop.index }}</span>
+        <span style="flex: 1">{{ name }}</span>
+        <span><strong>{{ score }}</strong> pts</span>
+    </div>
+    {% endfor %}
+</div>
+
+<!-- Schulze -->
+<div class="card">
+    <h3>Schulze Method</h3>
+    <p class="text-muted" style="font-size: 0.875rem">Beatpath winner</p>
+    {% for name, wins in results.schulze_method %}
+    <div class="result-row">
+        <span class="result-rank">{{ loop.index }}</span>
+        <span style="flex: 1">{{ name }}</span>
+        <span><strong>{{ wins }}</strong> wins</span>
+    </div>
+    {% endfor %}
+</div>
+
+
+{% else %}
+<div class="card">
+    <p class="text-muted" style="text-align: center;">No votes yet. Results will appear once voting begins.</p>
+</div>
+{% endif %}
+
+<div class="mt-1">
+    <a href="" class="btn btn-block">Vote on this poll</a>
+</div>
+{% endblock %}

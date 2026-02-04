@@ -1,0 +1,21 @@
+{% extends "base.html" %}
+{% block title %}Admin Login{% endblock %}
+{% block content %}
+<div class="card">
+    <h1>Admin Login</h1>
+    
+    {% if error %}
+    <p class="error">{{ error }}</p>
+    {% endif %}
+    
+    <form method="POST">
+        <label for="username">Username</label>
+        <input type="text" name="username" id="username" required placeholder="Enter username">
+        
+        <label for="password">Password</label>
+        <input type="password" name="password" id="password" required placeholder="Enter password">
+        
+        <button type="submit" class="btn-block mt-1">Login</button>
+    </form>
+</div>
+{% endblock %}
