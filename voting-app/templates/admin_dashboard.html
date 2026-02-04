@@ -6,7 +6,7 @@
     <a href="{{ url_for('admin_logout') }}" class="btn btn-secondary btn-small">Logout</a>
 </div>
 
-<a href="" class="btn btn-block mb-1">+ Create New Poll</a>
+<a href="{{ url_for('admin_create') }}" class="btn btn-block mb-1">+ Create New Poll</a>
 
 {% if polls %}
     {% for poll in polls %}

@@ -143,6 +143,38 @@ def delete_poll(poll_id):
     return redirect(url_for("admin_dashboard"))
 
 
+def generate_id():
+    return secrets.token_urlsafe(6)
+
+
+@app.route("/admin/create", methods=["GET", "POST"])
+def admin_create():
+    if not is_admin():
+        return redirect(url_for("admin_login"))
+    
+    if request.method == "POST":
+        poll_id = generate_id()
+        poll = {
+            "id": poll_id,
+            "title": request.form["title"],
+            "description": request.form.get("description", ""),
+            "created_at": datetime.now().isoformat(),
+            "is_open": "true",
+            "max_score": request.form.get("max_score", "5")
+        }
+        append_csv(f"{DATA_DIR}/polls.csv", poll, 
+                   ["id", "title", "description", "created_at", "is_open", "max_score"])
+        
+        # Save options
+        options = request.form.getlist("options")
+        option_rows = [{"id": i+1, "name": opt, "description": ""} 
+                       for i, opt in enumerate(options) if opt.strip()]
+        write_csv(f"{DATA_DIR}/options_{poll_id}.csv", option_rows, 
+                  ["id", "name", "description"])
+        
+        return redirect(url_for("admin_poll", poll_id=poll_id))
+    
+    return render_template("admin_create.html")
 
 
 # ============== VOTING ROUTES ==============
