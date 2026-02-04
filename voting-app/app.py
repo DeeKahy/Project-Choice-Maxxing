@@ -151,6 +151,20 @@ def delete_vote(poll_id, username):
 
     return redirect(url_for("admin_poll", poll_id=poll_id))
 
+@app.route("/admin/poll/<poll_id>/toggle", methods=["POST"])
+def toggle_poll(poll_id):
+    if not is_admin():
+        return redirect(url_for("admin_login"))
+    
+    polls = get_polls()
+    for p in polls:
+        if p["id"] == poll_id:
+            p["is_open"] = "false" if p["is_open"] == "true" else "true"
+    save_polls(polls)
+    
+    return redirect(url_for("admin_poll", poll_id=poll_id))
+
+
 @app.route("/admin/poll/<poll_id>/delete", methods=["POST"])
 def delete_poll(poll_id):
     if not is_admin():
@@ -172,6 +186,47 @@ def delete_poll(poll_id):
     return redirect(url_for("admin_dashboard"))
 
 # ============== VOTING ROUTES ==============
+
+@app.route("/vote/<poll_id>", methods=["GET", "POST"])
+def vote(poll_id):
+    poll = get_poll(poll_id)
+    if not poll:
+        return "Poll not found", 404
+    if poll["is_open"] != "true":
+        return "This poll is closed", 403
+        
+    options = get_options(poll_id)
+    max_score = int(poll.get("max_score", 5))
+    
+    if request.method == "POST":
+        username = request.form["username"].strip()
+        if not username:
+            return render_template("vote.html", poll=poll, options=options, 
+                                  max_score=max_score, error="Username required")
+        
+        # Check if user already voted
+        votes = get_votes(poll_id)
+        if any(v["username"] == username for v in votes):
+            return render_template("vote.html", poll=poll, options=options,
+                                  max_score=max_score, error="You already voted!")
+        
+        vote_row = {
+            "username": username,
+            "submitted_at": datetime.now().isoformat()
+        }
+        
+        for opt in options:
+            score = request.form.get(f"score_{opt['id']}", "0")
+            vote_row[f"option_{opt['id']}"] = score
+        
+        fieldnames = ["username", "submitted_at"] + [f"option_{o['id']}" for o in options]
+        append_csv(f"{DATA_DIR}/votes_{poll_id}.csv", vote_row, fieldnames)
+        
+        return render_template("results.html", poll=poll)
+    
+    return render_template("voting.html", poll=poll, options=options, max_score=max_score)
+
+
 
 @app.route("/results/<poll_id>")
 def results(poll_id):
