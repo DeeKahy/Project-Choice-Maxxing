@@ -23,8 +23,9 @@
             {{ 'Open' if poll.is_open == 'true' else 'Closed' }}
         </span>
     </div>
+            
     <div class="mt-1" style="display: flex; gap: 0.5rem; flex-wrap: wrap">
-        <form method="POST" action="" style="display: inline">
+        <form method="POST" action="{{ url_for('toggle_poll', poll_id=poll.id) }}" style="display: inline">
             <button type="submit" class="btn btn-small">
                 {{ 'Close Poll' if poll.is_open == 'true' else 'Reopen Poll' }}
             </button>

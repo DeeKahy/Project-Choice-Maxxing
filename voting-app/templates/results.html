@@ -41,6 +41,6 @@
 {% endif %}
 
 <div class="mt-1">
-    <a href="" class="btn btn-block">Vote on this poll</a>
+    <a href="{{ url_for('vote', poll_id=poll.id) }}" class="btn btn-block">Vote on this poll</a>
 </div>
 {% endblock %}
