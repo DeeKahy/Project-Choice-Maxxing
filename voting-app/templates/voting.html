@@ -1,0 +1,33 @@
+
+{% extends "base.html" %}
+{% block title %}Vote: {{ poll.title }}{% endblock %}
+{% block content %}
+<h1>{{ poll.title }}</h1>
+{% if poll.description %}<p class="text-muted">{{ poll.description }}</p>{% endif %}
+
+{% if error %}<p class="error">{{ error }}</p>{% endif %}
+
+<form method="POST">
+    <div class="card">
+        <label for="username">Your Name</label>
+        <input type="text" name="username" id="username" required placeholder="Enter your name">
+    </div>
+    
+    <h2>Rate each option (0 = worst, {{ max_score }} = best)</h2>
+    
+    {% for opt in options %}
+    <div class="option-card">
+        <h3>{{ opt.name }}</h3>
+        {% if opt.description %}<p class="text-muted">{{ opt.description }}</p>{% endif %}
+        <div class="score-selector">
+            {% for i in range(max_score + 1) %}
+            <input type="radio" name="score_{{ opt.id }}" id="score_{{ opt.id }}_{{ i }}" value="{{ i }}" {% if i == 0 %}checked{% endif %}>
+            <label for="score_{{ opt.id }}_{{ i }}">{{ i }}</label>
+            {% endfor %}
+        </div>
+    </div>
+    {% endfor %}
+    
+    <button type="submit" class="btn-block">Submit Vote</button>
+</form>
+{% endblock %}
