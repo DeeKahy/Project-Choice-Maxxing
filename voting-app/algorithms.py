@@ -65,8 +65,8 @@ def schulze_method(parsed_votes, option_names):
                     
     # ranking maps options to the number of things they are preferred to.
     ranking = {option : 0 for option, _ in scores}  # highest rank is the best one
-    for option_a, _ in scores:
-        for option_b, _ in scores:
+    for option_a in option_names:
+        for option_b in option_names:
             if option_a != option_b:
                 if preferences[(option_a,option_b)] >= preferences[(option_b,option_a)]:
                     # A is better than B
