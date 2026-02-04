@@ -135,8 +135,7 @@ def admin_poll(poll_id):
     # Calculate results using all methods
     results = calculate_all_results(votes, options, int(poll.get("max_score", 5)))
 
-    return render_template("admin_poll.html",
-                          poll=poll, options=options, votes=votes, results=results)
+    return render_template("admin_poll.html", poll=poll, options=options, votes=votes, results=results)
 
 @app.route("/admin/poll/<poll_id>/delete_vote/<username>", methods=["POST"])
 def delete_vote(poll_id, username):
@@ -174,6 +173,19 @@ def delete_poll(poll_id):
 
 # ============== VOTING ROUTES ==============
 
+@app.route("/results/<poll_id>")
+def results(poll_id):
+    poll = get_poll(poll_id)
+    if not poll:
+        return "Poll not found", 404
+
+    options = get_options(poll_id)
+    votes = get_votes(poll_id)
+
+    # Calculate results using all methods
+    results = calculate_all_results(votes, options, int(poll.get("max_score", 5)))
+
+    return render_template("results.html", poll=poll, options=options, votes=votes, results=results)
 
 
 # ============== HOME ==============
