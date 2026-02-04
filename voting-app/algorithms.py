@@ -29,7 +29,7 @@ def schulze_method(parsed_votes, option_names):
                     preferences[(option_a,option_b)] += 1
                     
     # ranking maps options to the number of things they are preferred to.
-    ranking = {option : 0 for option, _ in option_names}  # highest rank is the best one
+    ranking = {option : 0 for option in option_names}  # highest rank is the best one
     for option_a in option_names:
         for option_b in option_names:
             if option_a != option_b:
