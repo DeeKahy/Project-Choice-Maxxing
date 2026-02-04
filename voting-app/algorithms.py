@@ -51,9 +51,28 @@ def calculate_all_results(votes, options, max_score):
 
 def schulze_method(parsed_votes, option_names):
     """Schulze/Beatpath method"""
-        # TODO: do some fucning magic, and be my magic man!
-
-
+    # preferences maps (A,B) to the number of voters who prefer A to B. Everything starts at 0.
+    preferences = {(A,B) : 0 for A in option_names for B in option_names if A != B}
+    
+    # fill out the preferences
+    for dict in parsed_votes:
+        # username = dict["username"]
+        scores = dict["scores"]
+        for option_a, score_a in scores:
+            for option_b, score_b in scores:
+                if option_a != option_b and score_a > score_b:
+                    preferences[(option_a,option_b)] += 1
+                    
+    # ranking maps options to the number of things they are preferred to.
+    ranking = {option : 0 for option, _ in scores}  # highest rank is the best one
+    for option_a, _ in scores:
+        for option_b, _ in scores:
+            if option_a != option_b:
+                if preferences[(option_a,option_b)] >= preferences[(option_b,option_a)]:
+                    # A is better than B
+                    ranking[option_a] += 1
+    return sorted(ranking.items(), reverse=True)
+                
 # am using this bad boy to test frontend.
 def score_voting(parsed_votes, option_names):
     """Simple sum of scores"""
