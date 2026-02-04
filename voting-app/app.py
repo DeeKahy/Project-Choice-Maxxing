@@ -22,6 +22,24 @@ def read_csv(filepath):
         return []
     with open(filepath, "r", newline="", encoding="utf-8") as f:
         return list(csv.DictReader(f))
+        
+
+def write_csv(filepath, rows, fieldnames):
+    """Write list of dicts to CSV"""
+    with open(filepath, "w", newline="", encoding="utf-8") as f:
+        writer = csv.DictWriter(f, fieldnames=fieldnames)
+        writer.writeheader()
+        writer.writerows(rows)
+
+def append_csv(filepath, row, fieldnames):
+    """Append single row to CSV, create if needed"""
+    file_exists = os.path.exists(filepath)
+    with open(filepath, "a", newline="", encoding="utf-8") as f:
+        writer = csv.DictWriter(f, fieldnames=fieldnames)
+        if not file_exists:
+            writer.writeheader()
+        writer.writerow(row)
+
 # ============== POLL GARBAGE ==============
 
 def get_polls():
@@ -84,6 +102,21 @@ def admin_poll(poll_id):
     return render_template("admin_poll.html",
                           poll=poll, options=options, votes=votes, results=results)
 
+
+@app.route("/admin/poll/<poll_id>/delete_vote/<username>", methods=["POST"])
+def delete_vote(poll_id, username):
+    if not is_admin():
+        return redirect(url_for("admin_login"))
+    
+    votes = get_votes(poll_id)
+    votes = [v for v in votes if v["username"] != username]
+    
+    options = get_options(poll_id)
+    fieldnames = ["username", "submitted_at"] + [f"option_{o['id']}" for o in options]
+    write_csv(f"{DATA_DIR}/votes_{poll_id}.csv", votes, fieldnames)
+    
+    return redirect(url_for("admin_poll", poll_id=poll_id))
+    
 # ============== VOTING ROUTES ==============
 
 
