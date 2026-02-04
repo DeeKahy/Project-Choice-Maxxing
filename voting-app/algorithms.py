@@ -27,15 +27,30 @@ def schulze_method(parsed_votes, option_names):
             for option_b, score_b in scores:
                 if option_a != option_b and score_a > score_b:
                     preferences[(option_a,option_b)] += 1
-                    
+
+    # implementation of strongest path strength computation from https://en.wikipedia.org/wiki/Schulze_method
+    path_strength = {}
+    for i in option_names:
+        for j in option_names:
+            if i != j:
+                path_strength[i,j] = preferences[i,j] - preferences[j,i]
+
+    for k in option_names:
+        for i in option_names:
+            if i != k:
+                for j in option_names:
+                    if j != k and j != i:
+                        path_strength[i,j] = max(path_strength[i,j], min(path_strength[i,k], path_strength[k,j]))
+                        
     # ranking maps options to the number of things they are preferred to.
     ranking = {option : 0 for option in option_names}  # highest rank is the best one
     for option_a in option_names:
         for option_b in option_names:
             if option_a != option_b:
-                if preferences[(option_a,option_b)] >= preferences[(option_b,option_a)]:
+                if path_strength[(option_a,option_b)] >= path_strength[(option_b,option_a)]:
                     # A is better than B
                     ranking[option_a] += 1
+
     return tiebreak_with_total_scores(parsed_votes, sorted(ranking.items(), reverse=True, key=lambda x: x[1]))
     
 def tiebreak_with_total_scores(parsed_votes, ranked_items):
