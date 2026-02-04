@@ -39,6 +39,11 @@ def append_csv(filepath, row, fieldnames):
         if not file_exists:
             writer.writeheader()
         writer.writerow(row)
+        
+def save_polls(polls):
+    write_csv(f"{DATA_DIR}/polls.csv", polls, 
+              ["id", "title", "description", "created_at", "is_open", "max_score"])
+
 
 # ============== POLL GARBAGE ==============
 
@@ -117,6 +122,29 @@ def delete_vote(poll_id, username):
     
     return redirect(url_for("admin_poll", poll_id=poll_id))
     
+@app.route("/admin/poll/<poll_id>/delete", methods=["POST"])
+def delete_poll(poll_id):
+    if not is_admin():
+        return redirect(url_for("admin_login"))
+    
+    # Remove poll from polls.csv
+    polls = get_polls()
+    polls = [p for p in polls if p["id"] != poll_id]
+    save_polls(polls)
+    
+    # Delete associated files
+    options_file = f"{DATA_DIR}/options_{poll_id}.csv"
+    votes_file = f"{DATA_DIR}/votes_{poll_id}.csv"
+    if os.path.exists(options_file):
+        os.remove(options_file)
+    if os.path.exists(votes_file):
+        os.remove(votes_file)
+    
+    return redirect(url_for("admin_dashboard"))
+
+
+
+
 # ============== VOTING ROUTES ==============
 
 
