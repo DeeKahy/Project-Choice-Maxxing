@@ -44,7 +44,7 @@ def is_admin():
 @app.route("/admin", methods=["GET", "POST"])
 def admin_login():
     if request.method == "POST":
-        if (request.form["username"] == ADMIN_USER and 
+        if (request.form["username"] == ADMIN_USER and
             request.form["password"] == ADMIN_PASS):
             session["admin"] = True
             return redirect(url_for("admin_dashboard"))
@@ -69,18 +69,18 @@ def admin_dashboard():
 def admin_poll(poll_id):
     if not is_admin():
         return redirect(url_for("admin_login"))
-    
+
     poll = get_poll(poll_id)
     if not poll:
         return "Poll not found", 404
-    
+
     options = get_options(poll_id)
     votes = get_votes(poll_id)
-    
+
     # Calculate results using all methods
     results = calculate_all_results(votes, options, int(poll.get("max_score", 5)))
-    
-    return render_template("admin_poll.html", 
+
+    return render_template("admin_poll.html",
                           poll=poll, options=options, votes=votes, results=results)
 
 # ============== VOTING ROUTES ==============
