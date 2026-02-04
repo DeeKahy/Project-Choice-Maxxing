@@ -36,8 +36,17 @@ def schulze_method(parsed_votes, option_names):
                 if preferences[(option_a,option_b)] >= preferences[(option_b,option_a)]:
                     # A is better than B
                     ranking[option_a] += 1
-    return sorted(ranking.items(), reverse=True, key=lambda x: x[1])
-                
+    return tiebreak_with_total_scores(parsed_votes, sorted(ranking.items(), reverse=True, key=lambda x: x[1]))
+    
+def tiebreak_with_total_scores(parsed_votes, ranked_items):
+    """Sort a list of ranked voting options using the total score given to them by voters."""
+    total_scores = {}
+    for dict in parsed_votes:
+        scores = dict["scores"].items()
+        for option, score in scores:
+            total_scores[option] = total_scores.get(option, 0) + score
+    return sorted(ranked_items, reverse=True, key=lambda x: total_scores.get(x[0], 0))
+
 # am using this bad boy to test frontend.
 def score_voting(parsed_votes, option_names):
     """Simple sum of scores"""
