@@ -60,7 +60,7 @@ def tiebreak_with_total_scores(parsed_votes, ranked_items):
         scores = dict["scores"].items()
         for option, score in scores:
             total_scores[option] = total_scores.get(option, 0) + score
-    return sorted(ranked_items, reverse=True, key=lambda x: total_scores.get(x[0], 0))
+    return sorted(ranked_items, reverse=True, key=lambda x: (x[1], total_scores.get(x[0], 0)))
 
 # am using this bad boy to test frontend.
 def score_voting(parsed_votes, option_names):
