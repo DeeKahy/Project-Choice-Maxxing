@@ -84,8 +84,8 @@ def borda_count(parsed_votes, option_names):
 def tiebreak_with_total_scores(parsed_votes, ranked_items):
     """Sort a list of ranked voting options using the total score given to them by voters."""
     total_scores = {}
-    for dict in parsed_votes:
-        scores = dict["scores"].items()
+    for ballot in parsed_votes:
+        scores = ballot["scores"].items()
         for option, score in scores:
             total_scores[option] = total_scores.get(option, 0) + score
     return sorted(
@@ -117,4 +117,6 @@ def calculate_all_results(votes, options, max_score):
     return {
         "score_voting": score_voting(parsed, option_names),
         "schulze_method": schulze_method(parsed, option_names),
+        "borda_count": borda_count(parsed, option_names)
+
     }

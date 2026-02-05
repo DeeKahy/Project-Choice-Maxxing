@@ -120,6 +120,19 @@
     {% endfor %}
 </div>
 
+<!-- Borda Count -->
+<div class="card">
+    <h3>Borda Count</h3>
+    <p class="text-muted" style="font-size: 0.875rem">Ranked-choice converted to points</p>
+    {% for name, score in results.borda_count %}
+    <div class="result-row">
+        <span class="result-rank">{{ loop.index }}</span>
+        <span style="flex: 1">{{ name }}</span>
+        <span><strong>{{ score }}</strong> pts</span>
+    </div>
+    {% endfor %}
+</div>
+
 {% else %}
 <div class="card">
     <h3>Results</h3>
