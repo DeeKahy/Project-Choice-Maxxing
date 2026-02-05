@@ -1,4 +1,5 @@
 from itertools import permutations
+from collections import Counter
 
 
 def parse_votes(votes, options):
@@ -64,8 +65,20 @@ def schulze_method(parsed_votes, option_names):
     )
 
 
-def ranked_choice(parsed_votes, option_names):
-    pass
+# TODO consider changing how equal-ranked items are weighted with regard to ranked-choice voting, such as all items with rank n splitting 1 vote between them
+def borda_count(parsed_votes, option_names):
+    # borda count is essentially score voting with some preprocessing of candidate scores.
+    borda_votes = []
+    for dict in parsed_votes:
+        # first we sort the voter's option/score-pairs by score in descending order to get a ranking
+        ranking = sorted(dict["scores"].items(), reverse=True, key=lambda x: x[1])
+        for i in range(len(ranking)):
+            # then we assign scores such that options are scored by the number of options minus the rank (not score!) given by the voter
+            ranking[i] = (ranking[i][0], len(option_names) - (i + 1))
+        # finally we use the ranking to reconstruct parsed_votes
+        borda_votes.append({"username": dict["username"], "scores": dict(ranking)})
+    # and we send the new votes to score_voting
+    return score_voting(borda_votes, option_names)
 
 
 def tiebreak_with_total_scores(parsed_votes, ranked_items):
