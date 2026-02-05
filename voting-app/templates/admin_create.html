@@ -1,0 +1,53 @@
+{% extends "base.html" %}
+{% block title %}Create Poll{% endblock %}
+{% block content %}
+<div class="header-row">
+    <h1>Create New Poll</h1>
+    <a href="{{ url_for('admin_dashboard') }}" class="btn btn-secondary btn-small">← Back</a>
+</div>
+
+<form method="POST" id="poll-form">
+    <div class="card">
+        <label for="title">Poll Title *</label>
+        <input type="text" name="title" id="title" required placeholder="e.g., Friday Dinner">
+        
+        <label for="description">Description (optional)</label>
+        <input type="text" name="description" id="description" placeholder="e.g., Where should we eat?">
+        
+        <label for="max_score">Max Score</label>
+        <select name="max_score" id="max_score">
+            <option value="3">0-3</option>
+            <option value="5" selected>0-5</option>
+            <option value="10">0-10</option>
+        </select>
+    </div>
+    
+    <div class="card">
+        <h2>Options</h2>
+        <p class="text-muted mb-1">Add at least 2 options for voters to choose from</p>
+        
+        <div id="options-container">
+            <input type="text" name="options" placeholder="Option 1" required>
+            <input type="text" name="options" placeholder="Option 2" required>
+            <input type="text" name="options" placeholder="Option 3">
+        </div>
+        
+        <button type="button" class="btn btn-secondary btn-small mt-1" onclick="addOption()">+ Add Option</button>
+    </div>
+    
+    <button type="submit" class="btn btn-block">Create Poll</button>
+</form>
+
+<script>
+let optionCount = 3;
+function addOption() {
+    optionCount++;
+    const container = document.getElementById('options-container');
+    const input = document.createElement('input');
+    input.type = 'text';
+    input.name = 'options';
+    input.placeholder = 'Option ' + optionCount;
+    container.appendChild(input);
+}
+</script>
+{% endblock %}

@@ -22,7 +22,6 @@ def read_csv(filepath):
         return []
     with open(filepath, "r", newline="", encoding="utf-8") as f:
         return list(csv.DictReader(f))
-        
 
 def write_csv(filepath, rows, fieldnames):
     """Write list of dicts to CSV"""
@@ -40,6 +39,7 @@ def append_csv(filepath, row, fieldnames):
             writer.writeheader()
         writer.writerow(row)
 
+
 # ============== POLL GARBAGE ==============
 
 def get_polls():
@@ -54,6 +54,13 @@ def get_options(poll_id):
 
 def get_votes(poll_id):
     return read_csv(f"{DATA_DIR}/votes_{poll_id}.csv")
+
+def save_polls(polls):
+    write_csv(f"{DATA_DIR}/polls.csv", polls,
+              ["id", "title", "description", "created_at", "is_open", "max_score"])
+
+def generate_id():
+    return secrets.token_urlsafe(6)
 
 # ============== YOUR SECURITY NIGHTMARE ==============
 
@@ -84,6 +91,35 @@ def admin_dashboard():
     polls = get_polls()
     return render_template("admin_dashboard.html", polls=polls)
 
+@app.route("/admin/create", methods=["GET", "POST"])
+def admin_create():
+    if not is_admin():
+        return redirect(url_for("admin_login"))
+
+    if request.method == "POST":
+        poll_id = generate_id()
+        poll = {
+            "id": poll_id,
+            "title": request.form["title"],
+            "description": request.form.get("description", ""),
+            "created_at": datetime.now().isoformat(),
+            "is_open": "true",
+            "max_score": request.form.get("max_score", "5")
+        }
+        append_csv(f"{DATA_DIR}/polls.csv", poll,
+                   ["id", "title", "description", "created_at", "is_open", "max_score"])
+
+        # Save options
+        options = request.form.getlist("options")
+        option_rows = [{"id": i+1, "name": opt, "description": ""}
+                       for i, opt in enumerate(options) if opt.strip()]
+        write_csv(f"{DATA_DIR}/options_{poll_id}.csv", option_rows,
+                  ["id", "name", "description"])
+
+        return redirect(url_for("admin_poll", poll_id=poll_id))
+
+    return render_template("admin_create.html")
+
 @app.route("/admin/poll/<poll_id>")
 def admin_poll(poll_id):
     if not is_admin():
@@ -99,26 +135,57 @@ def admin_poll(poll_id):
     # Calculate results using all methods
     results = calculate_all_results(votes, options, int(poll.get("max_score", 5)))
 
-    return render_template("admin_poll.html",
-                          poll=poll, options=options, votes=votes, results=results)
-
+    return render_template("admin_poll.html", poll=poll, options=options, votes=votes, results=results)
 
 @app.route("/admin/poll/<poll_id>/delete_vote/<username>", methods=["POST"])
 def delete_vote(poll_id, username):
     if not is_admin():
         return redirect(url_for("admin_login"))
-    
+
     votes = get_votes(poll_id)
     votes = [v for v in votes if v["username"] != username]
-    
+
     options = get_options(poll_id)
     fieldnames = ["username", "submitted_at"] + [f"option_{o['id']}" for o in options]
     write_csv(f"{DATA_DIR}/votes_{poll_id}.csv", votes, fieldnames)
-    
+
     return redirect(url_for("admin_poll", poll_id=poll_id))
-    
+
+@app.route("/admin/poll/<poll_id>/delete", methods=["POST"])
+def delete_poll(poll_id):
+    if not is_admin():
+        return redirect(url_for("admin_login"))
+
+    # Remove poll from polls.csv
+    polls = get_polls()
+    polls = [p for p in polls if p["id"] != poll_id]
+    save_polls(polls)
+
+    # Delete associated files
+    options_file = f"{DATA_DIR}/options_{poll_id}.csv"
+    votes_file = f"{DATA_DIR}/votes_{poll_id}.csv"
+    if os.path.exists(options_file):
+        os.remove(options_file)
+    if os.path.exists(votes_file):
+        os.remove(votes_file)
+
+    return redirect(url_for("admin_dashboard"))
+
 # ============== VOTING ROUTES ==============
 
+@app.route("/results/<poll_id>")
+def results(poll_id):
+    poll = get_poll(poll_id)
+    if not poll:
+        return "Poll not found", 404
+
+    options = get_options(poll_id)
+    votes = get_votes(poll_id)
+
+    # Calculate results using all methods
+    results = calculate_all_results(votes, options, int(poll.get("max_score", 5)))
+
+    return render_template("results.html", poll=poll, options=options, votes=votes, results=results)
 
 
 # ============== HOME ==============
