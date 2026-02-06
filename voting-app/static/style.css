@@ -71,6 +71,13 @@ button:hover, .btn:hover { background: #0056b3; }
 .btn-secondary:hover { background: #545b62; }
 .btn-small { padding: 0.4rem 0.8rem; font-size: 0.875rem; }
 .btn-block { display: block; width: 100%; }
+.btn-disabled {
+    background: #6c757d !important;
+    color: #adb5bd !important;
+    cursor: not-allowed !important;
+    opacity: 0.6;
+}
+.btn-disabled:hover { background: #6c757d !important; }
 
 /* Score selector */
 .score-selector {
