@@ -193,7 +193,7 @@ def vote(poll_id):
     if not poll:
         return "Poll not found", 404
     if poll["is_open"] != "true":
-        return "This poll is closed", 403
+        return redirect(url_for("results", poll_id=poll_id))
         
     options = get_options(poll_id)
     max_score = int(poll.get("max_score", 5))
