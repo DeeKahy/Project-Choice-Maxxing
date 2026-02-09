@@ -103,6 +103,38 @@ def score_voting(parsed_votes, option_names):
     return sorted(totals.items(), reverse=True, key=lambda x: x[1])
 
 
+def star_voting(parsed_votes, option_names):
+    """Score Then Automatic Runoff (STAR) method"""
+    # this method sorts candidates by total score, then considers the top two candidates to find a winner
+    # We already have a method to rank candidates by score, so we'll use that
+    options = score_voting(parsed_votes, option_names)
+    ranking = []
+    for _ in range(len(options) - 1):
+        # out of the top two options, the winner is the one with the higher score on the most ballots
+        A, _ = options[0]
+        B, _ = options[1]
+        A_wins = 0
+        B_wins = 0
+        for ballot in parsed_votes:
+            if ballot[A] > ballot[B]:
+                A_wins += 1
+            elif ballot[A] < ballot[B]:
+                B_wins += 1
+        if A_wins >= B_wins:
+            # add the winner to the final ranking and remove it from the options to give the others a chance
+            del options[0]
+            ranking.append((A, A_wins))
+            if len(options) == 1:
+                # put the other option at the end so it's included even if it never won, if it's the only one left
+                ranking.append((B, B_wins))
+        else:
+            del options[1]
+            ranking.append[(B, B_wins)]
+            if len(options) == 1:
+                ranking.append((A, A_wins))
+    return ranking
+
+
 # ============== MAIN ENTRY ==============
 
 
@@ -117,6 +149,5 @@ def calculate_all_results(votes, options, max_score):
     return {
         "score_voting": score_voting(parsed, option_names),
         "schulze_method": schulze_method(parsed, option_names),
-        "borda_count": borda_count(parsed, option_names)
-
+        "borda_count": borda_count(parsed, option_names),
     }
