@@ -116,9 +116,9 @@ def star_voting(parsed_votes, option_names):
         A_wins = 0
         B_wins = 0
         for ballot in parsed_votes:
-            if ballot[A] > ballot[B]:
+            if ballot["scores"][A] > ballot["scores"][B]:
                 A_wins += 1
-            elif ballot[A] < ballot[B]:
+            elif ballot["scores"][A] < ballot["scores"][B]:
                 B_wins += 1
         if A_wins >= B_wins:
             # add the winner to the final ranking and remove it from the options to give the others a chance
@@ -150,4 +150,5 @@ def calculate_all_results(votes, options, max_score):
         "score_voting": score_voting(parsed, option_names),
         "schulze_method": schulze_method(parsed, option_names),
         "borda_count": borda_count(parsed, option_names),
+        "star_voting": star_voting(parsed, option_names),
     }
