@@ -2,11 +2,7 @@
 %} {% block content %}
 <div class="header-row">
     <h1>{{ poll.title }}</h1>
-    <a
-        href="{{ url_for('admin_dashboard') }}"
-        class="btn btn-secondary btn-small"
-        >← Back</a
-    >
+    <a href="{{ url_for('admin_dashboard') }}" class="btn btn-secondary btn-small">← Back</a>
 </div>
 
 {% if poll.description %}
@@ -17,21 +13,19 @@
 <div class="card">
     <div class="poll-header">
         <span>Status:</span>
-        <span
-            class="status-badge {% if poll.is_open == 'true' %}status-open{% else %}status-closed{% endif %}"
-        >
+        <span class="status-badge {% if poll.is_open == 'true' %}status-open{% else %}status-closed{% endif %}">
             {{ 'Open' if poll.is_open == 'true' else 'Closed' }}
         </span>
     </div>
-            
+
     <div class="mt-1" style="display: flex; gap: 0.5rem; flex-wrap: wrap">
         <form method="POST" action="{{ url_for('toggle_poll', poll_id=poll.id) }}" style="display: inline">
             <button type="submit" class="btn btn-small">
                 {{ 'Close Poll' if poll.is_open == 'true' else 'Reopen Poll' }}
             </button>
         </form>
-        <form method="POST" action="{{ url_for('delete_poll', poll_id=poll.id) }}" style="display: inline;" 
-              onsubmit="return confirm('Are you sure you want to delete this poll?');">
+        <form method="POST" action="{{ url_for('delete_poll', poll_id=poll.id) }}" style="display: inline;"
+            onsubmit="return confirm('Are you sure you want to delete this poll?');">
             <button type="submit" class="btn btn-danger btn-small">Delete Poll</button>
         </form>
     </div>
@@ -43,12 +37,7 @@
 <div class="card">
     <h3>Share Voting Link</h3>
     <div class="copy-link">
-        <input
-            type="text"
-            id="vote-link"
-            value="{{ request.url_root }}vote/{{ poll.id }}"
-            readonly
-        />
+        <input type="text" id="vote-link" value="{{ request.url_root }}vote/{{ poll.id }}" readonly />
         <button type="button" class="btn btn-small" onclick="copyLink()">
             Copy
         </button>
@@ -76,12 +65,8 @@
                 {{ vote.submitted_at[:16].replace('T', ' ') }}
             </span>
         </div>
-        <form
-            method="POST"
-            action=""
-            onsubmit="return confirm('
-            Delete vote from {{ vote.username }}?');"
-        >
+        <form method="POST" action="" onsubmit="return confirm('
+            Delete vote from {{ vote.username }}?');">
             <button type="submit" class="btn btn-danger btn-small">x</button>
         </form>
     </div>
@@ -129,6 +114,19 @@
         <span class="result-rank">{{ loop.index }}</span>
         <span style="flex: 1">{{ name }}</span>
         <span><strong>{{ score }}</strong> pts</span>
+    </div>
+    {% endfor %}
+</div>
+
+<!-- STAR VOTING -->
+<div class="card">
+    <h3>STAR Voting</h3>
+    <p class="text-muted" style="font-size: 0.875rem">Runoff winner</p>
+    {% for name, wins in results.star_voting %}
+    <div class="result-row">
+        <span class="result-rank">{{ loop.index }}</span>
+        <span style="flex: 1">{{ name }}</span>
+        <span><strong>{{ wins }}</strong> runoff wins</span>
     </div>
     {% endfor %}
 </div>
