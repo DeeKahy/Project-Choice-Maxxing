@@ -1,5 +1,5 @@
 from itertools import permutations
-from collections import Counter
+from collections import Counter, defaultdict
 
 
 def parse_votes(votes, options):
@@ -17,19 +17,34 @@ def parse_votes(votes, options):
 # ============== METHODS ==============
 
 
-def schulze_method(parsed_votes, option_names):
-    """Schulze/Beatpath method"""
-    # preferences maps (A,B) to the number of voters who prefer A to B. Everything starts at 0.
-    preferences = {(A, B): 0 for A in option_names for B in option_names if A != B}
-
-    # fill out the preferences
-    for dict in parsed_votes:
-        # username = dict["username"]
-        scores = dict["scores"].items()
+def find_preferences(parsed_votes):
+    """Returns a dict mapping pairs of candidates to the number of voters who prefer the first element to the second."""
+    # preferences maps (A,B) to the number of voters who prefer A to B. Default is 0 via passing "int" to its constructor.
+    preferences = defaultdict(int)
+    for ballot in parsed_votes:
+        scores = ballot["scores"].items()
         for option_a, score_a in scores:
             for option_b, score_b in scores:
                 if option_a != option_b and score_a > score_b:
                     preferences[(option_a, option_b)] += 1
+    return preferences
+
+
+def schulze_method(parsed_votes, option_names):
+    """Schulze/Beatpath method"""
+    """
+    # preferences maps (A,B) to the number of voters who prefer A to B. Everything starts at 0.
+    preferences = {(A, B): 0 for A in option_names for B in option_names if A != B}
+
+    # fill out the preferences
+    for ballot in parsed_votes:
+        scores = ballot["scores"].items()
+        for option_a, score_a in scores:
+            for option_b, score_b in scores:
+                if option_a != option_b and score_a > score_b:
+                    preferences[(option_a, option_b)] += 1
+    """
+    preferences = find_preferences(parsed_votes)
 
     # implementation of strongest path strength computation from https://en.wikipedia.org/wiki/Schulze_method
     path_strength = {}
