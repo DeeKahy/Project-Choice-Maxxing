@@ -49,12 +49,12 @@
 <!-- STAR VOTING -->
 <div class="card">
     <h3>STAR Voting</h3>
-    <p class="text-muted" style="font-size: 0.875rem">Finalist winner</p>
+    <p class="text-muted" style="font-size: 0.875rem">Runoff winner</p>
     {% for name, wins in results.star_voting %}
     <div class="result-row">
         <span class="result-rank">{{ loop.index }}</span>
         <span style="flex: 1">{{ name }}</span>
-        <span><strong>{{ wins }}</strong> wins</span>
+        <span><strong>{{ wins }}</strong> runoff wins</span>
     </div>
     {% endfor %}
 </div>
