@@ -129,7 +129,7 @@ def star_voting(parsed_votes, option_names):
                 ranking.append((B, B_wins))
         else:
             del options[1]
-            ranking.append[(B, B_wins)]
+            ranking.append((B, B_wins))
             if len(options) == 1:
                 ranking.append((A, A_wins))
     return ranking
