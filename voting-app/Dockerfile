@@ -5,9 +5,12 @@ WORKDIR /app
 COPY requirements.txt .
 RUN pip install --no-cache-dir -r requirements.txt
 
-COPY . .
+# Copy application files but exclude data directory
+COPY *.py .
+COPY static/ static/
+COPY templates/ templates/
 
-# Create data directory
+# Create empty data directory (will be mounted as volume in production)
 RUN mkdir -p /app/data
 
 EXPOSE 5000

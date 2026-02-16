@@ -80,9 +80,9 @@
 
 <div class="mt-1">
     {% if poll.is_open == "true" %}
-    <a href="{{ url_for('vote', poll_id=poll.id) }}" class="btn btn-block">Vote on this poll</a>
+        <a href="{{ url_for('vote', poll_id=poll.id) }}" class="btn btn-block">Vote on this poll</a>
     {% else %}
-    <button class="btn btn-block btn-disabled" disabled>Poll Closed</button>
+        <button class="btn btn-block btn-disabled" disabled>Poll Closed</button>
     {% endif %}
 </div>
 {% endblock %}

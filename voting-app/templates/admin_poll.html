@@ -65,7 +65,7 @@
                 {{ vote.submitted_at[:16].replace('T', ' ') }}
             </span>
         </div>
-        <form method="POST" action="" onsubmit="return confirm('
+        <form method="POST" action="{{ url_for('delete_vote', poll_id=poll.id, username=vote.username) }}" onsubmit="return confirm('
             Delete vote from {{ vote.username }}?');">
             <button type="submit" class="btn btn-danger btn-small">x</button>
         </form>
