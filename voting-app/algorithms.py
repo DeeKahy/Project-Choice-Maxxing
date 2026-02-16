@@ -1,5 +1,6 @@
 from itertools import permutations
 from collections import Counter, defaultdict
+from math import sqrt
 
 
 def parse_votes(votes, options):
@@ -17,16 +18,21 @@ def parse_votes(votes, options):
 # ============== METHODS ==============
 
 
-def find_preferences(parsed_votes):
-    """Returns a dict mapping pairs of candidates to the number of voters who prefer the first element to the second."""
+def find_preferences(parsed_votes, mask=lambda x: x):
+    """Returns a dict mapping pairs of candidates to the number of voters who prefer the first element to the second.
+    Provide a single-argument mask to modify the candidates' representation in the mapping.
+    """
     # preferences maps (A,B) to the number of voters who prefer A to B. Default is 0 via passing "int" to its constructor.
-    preferences = defaultdict(int)
+    preferences = {}
     for ballot in parsed_votes:
-        scores = ballot["scores"].items()
+        scores = [(mask(key), value) for (key, value) in ballot["scores"].items()]
         for option_a, score_a in scores:
             for option_b, score_b in scores:
-                if option_a != option_b and score_a > score_b:
-                    preferences[(option_a, option_b)] += 1
+                if option_a != option_b:
+                    if (option_a, option_b) not in preferences:
+                        preferences[(option_a, option_b)] = 0
+                    if score_a > score_b:
+                        preferences[(option_a, option_b)] += 1
     return preferences
 
 
@@ -150,6 +156,196 @@ def star_voting(parsed_votes, option_names):
     return ranking
 
 
+def kemeny_young(parsed_votes, option_names):
+    """Kemeny-Young rule/Kemeny method"""
+    # Gonna be lots of comments in this one. Based it on a math paper so steel yourself.
+    preferences = find_preferences(parsed_votes, mask=option_names.index)
+    # With the preferences known, we now have to find the sequence of candidates that satisfies the most voters' preferences.
+    # This is NP-hard and slow and awful no matter what, especially with more candidates.
+
+    # One sub-exponential solution to this problem requires us to sort the candidates by weighted indegree in increasing order.
+    # Weights (preference counts) are normalized such that preferences[(A, B)] + preferences[(B, A)] = 1.
+    preferences = {
+        (A, B): (
+            preferences[(A, B)]
+            / (1, preferences[(A, B)] + preferences[(B, A)])[
+                (preferences[(A, B)] + preferences[(B, A)]) != 0
+            ]
+        )
+        for (A, B) in list(preferences)
+    }
+    print("Preferences normalized:")
+    for A, B in preferences:
+        if preferences[(A, B)] >= preferences[(B, A)]:
+            print(f"{A} is preferred to {B} by {preferences[(A, B)]}")
+    # V = option_names.copy()
+    V = list(range(len(option_names)))
+    # For us, sorting by weighted indegree means sorting by the sum of preferences for each candidate, which gets us the following ranking:
+    π1 = sorted(
+        V,
+        key=lambda v: sum([preferences[(v, u)] for u in V if v != u]),
+        reverse=True,
+    )
+    # We'll also need some helper functions for this job:
+    # C is our cost function and computes the weight of the preferences we don't fulfill (the backwards arcs in a graph of candiates with preferences as edges)
+    C = lambda π: sum(preferences[(u, v)] for i, v in enumerate(π) for u in π[i + 1 :])
+    print(f"Initial ranking is ->{π1} with cost {C(π1)}")
+    # b computes the weight of the arcs incident to v in the ordering formed by moving v to position p in π.
+    b = lambda π, v, p: sum(
+        [
+            (preferences[(u, v)], preferences[(v, u)])[p > π.index(u)]
+            for u in V
+            if u != v and p != π.index(u)
+        ]
+    )
+    # r defines the uncertainty of each candidate's placement in the ranking.
+    r = {v: (4 * sqrt(2 * C(π1))) + (2 * b(π1, v, π1.index(v))) for v in V}
+    # We need to find a new ranking π2 such that |π2(v) − π1(v)| ≤ r(v) for all v.
+    print("Uncertainties computed:")
+    for i, v in enumerate(V):
+        print(
+            f"r({v}) = {r[v]}",
+            end=("\t" if i != len(V) - 1 else "\n"),
+        )
+    # Dynamic programming will allow us to do that. But first we need to compute a kernel, to actually achieve our desired performance.
+    # The kernel is computed with a majority tournament, which is an unweighted graph of all the majority preferences:
+    mt = [
+        (A, B) for (A, B) in preferences if preferences[(A, B)] <= preferences[(B, A)]
+    ]  # mt is a list of pairs where there's an arc from the first to the second item.
+    print(
+        f"Majority tournament constructed with {len(V)} vertices and {len(mt)} edges."
+    )
+    # We need to break ties in mt so arcs never go both ways between two vertices:
+    tied = True
+    while tied:
+        tied = False
+        for A, B in mt:
+            if (B, A) in mt:
+                mt.remove((B, A))
+                tied = True
+                break
+    print(f"Tiebreaking completed with {len(mt)} edges remaining.")
+    # We apply reduction rules to compute the kernel. The first rule removes any vertex that is not part of a triangle (3-arc cycle)
+    # The second rule concerns arcs that are present in more than 2U triangles, so let's get some triangles.
+    triangles = lambda mt: {
+        frozenset((a, b, c)) for a, b in mt for c in V if (b, c) in mt and (c, a) in mt
+    }
+    in_triangle = lambda v, ts: any(v in t for t in ts)
+    in_triangles = lambda v, u, ts: sum((v in t and u in t) for t in ts if (v, u) in mt)
+    # U will be somewhere between the optimal cost and 5 times the optimal cost.
+    # At the end of kernelization it should be equal to the initial cost C(π1),
+    # which indicates that the kernel is a more compact version of our existing problem, as intended.
+    U = C(π1)
+    must_pay = 0
+    trivial_len = -1
+    flips = -1
+    trivial = []  # [(vertex, predecessor set, successor set)]
+    while len(trivial) != trivial_len and flips:
+        trivial_len = len(trivial)
+        ts = triangles(mt)
+        # First reduction rule: Eliminate vertices that aren't part of a triangle. These are trivial to insert into the ranking.
+        # Record their immediate predecessors and successors. We will use those to insert them into the ranking later.
+        triangle_free = [
+            (v, {A for (A, B) in mt if B == v}, {B for (A, B) in mt if A == v})
+            for v in V
+            if not in_triangle(v, ts)
+        ]
+        # Note that we add the cost of including trivial vertices to U, since we still have to pay for them.
+        must_pay += sum(
+            sum(preferences[(u, v)] for u in p) + sum(preferences[(v, u)] for u in s)
+            for v, p, s in triangle_free
+        )
+        mt = [
+            (A, B)
+            for (A, B) in mt
+            if (A not in (v for v, _, _ in triangle_free))
+            and (B not in (v for v, _, _ in triangle_free))
+        ]
+        if triangle_free:
+            print(f"Kernelization found {len(triangle_free)} trivial vertices.")
+        trivial += triangle_free
+        # Second reduction rule: Flip edges that are in more than 2U triangles and set their weight to 1, and always add their original weight to U.
+        flipped = [(A, B) for (A, B) in mt if in_triangles(A, B, ts) > (2 * U)]
+        flips = len(flipped)
+        mt = [(B, A) if (A, B) in flipped else (A, B) for (A, B) in mt]
+        for A, B in flipped:
+            # Note that (A,B) from mt is (B,A) in preferences. Might want to homogenize that at some point.
+            must_pay += preferences[(B, A)]
+            preferences[(B, A)] = 0
+            preferences[(A, B)] = 1
+        if flips:
+            print(
+                f"Kernelization flipped and hardened {flips} edges that were in more than 2*U ({2*U}) triangles."
+            )
+        U = sum(preferences[(A, B)] for (A, B) in mt) + must_pay
+    if U != C(π1):  # Kernel cost and initial cost must agree, or the kernel is invalid!
+        raise RuntimeError(
+            f"Sanity check failed: Kernel cost {U} does not agree with initial cost {C(π1)}"
+        )
+    print(f"The following vertices are trivial:")
+    for v, p, s in trivial:
+        print(
+            f"'{v}' comes after {p if p else "nothing"} and before {s if s else "nothing"}{" (first place in ranking)" if not s else " (last place in ranking)" if not p  else ""}."
+        )
+        # v can be trivially ranked so we can remove it from V to make the dynamic programming-part run faster.
+        V.remove(v)
+
+    # Now we've modified weights to make our life easier and found the cost for an optimal ranking.
+    # It's time for dynamic programming so we can find our optimal ranking π2.
+    valid = lambda S: (
+        all(v in S for v in V if (π1.index(v) <= (len(S) - r[v])))
+        and all(v not in S for v in V if (π1.index(v) > (len(S) + r[v])))
+    )
+    # subset_cost handles our memoization. Cbar computes the optimal cost of ranking the candidates in set S.
+    subset_cost = {}
+    Cbar = lambda S: subset_cost.setdefault(
+        S,
+        min(
+            [
+                (Cbar(S - {v}) + sum(preferences[(u, v)] for u in S - {v}))
+                for v in S
+                if valid(S - {v})
+            ],
+            default=0,
+        ),
+    )
+    # We can fill out subset_cost by giving Cbar the full set of candidates we want to rank.
+    # (We use a frozenset because it is immutable and thus hashable)
+    π2 = []
+    T = frozenset(V)
+    while len(T):  # Loop while there are candidates left.
+        # Find the candidate that is cheapest to place last and append it.
+        for v in T:
+            if valid(T - {v}) and Cbar(T) == (
+                Cbar(T - {v}) + sum(preferences[(u, v)] for u in T - {v})
+            ):
+                π2.append(v)
+                T -= {v}
+                break
+    print(f"Optimal subset ranking costs computed:")
+    for i, s in enumerate(subset_cost):
+        print(
+            f"Cbar({set(s) if s else "{ }"}) = {subset_cost[s]}",
+            end=("\t" if i != len(subset_cost) - 1 else "\n"),
+        )
+    print(f"Non-trivial ranking is ->{π2}")
+
+    # Now we have ranked the non-trivial candidates. It's time to insert the trivial ones.
+    for v, p, s in trivial:
+        # v should come after all its predecessors and before all its successors. (Predecessors being vertices lower in the ranking)
+        max_s = max(map(π2.index, s & set(π2)), default=0)
+        min_p = min(map(π2.index, p & set(π2)), default=len(π2))
+        if (
+            min_p < max_s
+        ):  # No predecessor may come after a successor! This is a sign that the non-trivial part has gone wrong.
+            raise RuntimeError(
+                f"Sanity check failed: Predecessors {p} and successors {s} overlap in ranking {π2}."
+            )
+        π2.insert(min_p, v)
+    print(f"Final ranking is ->{π2} with cost {C(π2)}")
+    return [(option_names[v], C(π2[i:])) for i, v in enumerate(π2)]
+
+
 # ============== MAIN ENTRY ==============
 
 
@@ -166,4 +362,5 @@ def calculate_all_results(votes, options, max_score):
         "schulze_method": schulze_method(parsed, option_names),
         "borda_count": borda_count(parsed, option_names),
         "star_voting": star_voting(parsed, option_names),
+        "kemeny_young": kemeny_young(parsed, option_names),
     }

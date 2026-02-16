@@ -59,6 +59,19 @@
     {% endfor %}
 </div>
 
+<!-- Kemeny Young -->
+<div class="card">
+    <h3>Kemeny-Young Method</h3>
+    <p class="text-muted" style="font-size: 0.875rem">Optimal excluding subset cost</p>
+    {% for name, cost in results.kemeny_young %}
+    <div class="result-row">
+        <span class="result-rank">{{ loop.index }}</span>
+        <span style="flex: 1">{{ name }}</span>
+        <span><strong>{{ cost }}</strong> cost </span>
+    </div>
+    {% endfor %}
+</div>
+
 {% else %}
 <div class="card">
     <p class="text-muted" style="text-align: center;">No votes yet. Results will appear once voting begins.</p>
