@@ -3,6 +3,17 @@ from collections import Counter, defaultdict
 from math import sqrt
 
 
+def round_to_significant_digits(string, n):
+    """Return string cut off at the nth significant digit."""
+    count = 0
+    for i, ch in enumerate(string):
+        if ch.isdigit() and ch != "0":
+            count += 1
+            if count == n:
+                return string[: i + 1]
+    return string
+
+
 def parse_votes(votes, options):
     """Convert CSV vote rows to usable format"""
     parsed = []
@@ -150,7 +161,7 @@ def star_voting(parsed_votes, option_names):
                 ranking.append((B, B_wins))
         else:
             del options[1]
-            ranking.append[(B, B_wins)]
+            ranking.append((B, B_wins))
             if len(options) == 1:
                 ranking.append((A, A_wins))
     return ranking
@@ -251,16 +262,14 @@ def kemeny_young(parsed_votes, option_names):
             if not in_triangle(v, ts)
         ]
         # Note that we add the cost of including trivial vertices to U, since we still have to pay for them.
-        must_pay += sum(
-            sum(preferences[(u, v)] for u in p) + sum(preferences[(v, u)] for u in s)
-            for v, p, s in triangle_free
-        )
+        must_pay += sum(preferences[(A, B)] for (A, B) in mt)
         mt = [
             (A, B)
             for (A, B) in mt
             if (A not in (v for v, _, _ in triangle_free))
             and (B not in (v for v, _, _ in triangle_free))
         ]
+        must_pay -= sum(preferences[(A, B)] for (A, B) in mt)
         if triangle_free:
             print(f"Kernelization found {len(triangle_free)} trivial vertices.")
         trivial += triangle_free
@@ -277,7 +286,7 @@ def kemeny_young(parsed_votes, option_names):
             print(
                 f"Kernelization flipped and hardened {flips} edges that were in more than 2*U ({2*U}) triangles."
             )
-        U = sum(preferences[(A, B)] for (A, B) in mt) + must_pay
+    U = sum(preferences[(A, B)] for (A, B) in mt) + must_pay
     if U != C(π1):  # Kernel cost and initial cost must agree, or the kernel is invalid!
         raise RuntimeError(
             f"Sanity check failed: Kernel cost {U} does not agree with initial cost {C(π1)}"
@@ -362,5 +371,8 @@ def calculate_all_results(votes, options, max_score):
         "schulze_method": schulze_method(parsed, option_names),
         "borda_count": borda_count(parsed, option_names),
         "star_voting": star_voting(parsed, option_names),
-        "kemeny_young": kemeny_young(parsed, option_names),
+        "kemeny_young": [
+            (k, round_to_significant_digits(str(v), 3))
+            for (k, v) in kemeny_young(parsed, option_names)
+        ],
     }
