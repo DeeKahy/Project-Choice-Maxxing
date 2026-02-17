@@ -91,11 +91,15 @@
             echo "  build-docker       - Build Docker image"
             echo "  test-voting-app    - Run syntax tests"
             echo ""
-            echo "Python version: $(python --version)"
-            echo "Flask available: $(python -c 'import flask; print(flask.__version__)' 2>/dev/null || echo 'Not found')"
+            echo "Python version: $(${pythonEnv}/bin/python --version)"
+            echo "Flask available: $(${pythonEnv}/bin/python -c 'import flask; print(flask.__version__)' 2>/dev/null || echo 'Not found')"
             echo ""
             echo "To start developing: run 'dev-voting-app'"
             echo ""
+            
+            # Set up aliases for this session
+            alias python="${pythonEnv}/bin/python"
+            alias pip="${pythonEnv}/bin/pip"
             
             # Make sure we're in the right directory context
             export PYTHONPATH="$PWD/voting-app:$PYTHONPATH"
@@ -104,12 +108,6 @@
           # Environment variables
           FLASK_ENV = "development";
           FLASK_DEBUG = "1";
-          
-          # Make python command available (this will use the Nix Python)
-          shellAliases = {
-            python = "${pythonEnv}/bin/python";
-            pip = "${pythonEnv}/bin/pip";
-          };
         };
 
         # Apps for direct running
