@@ -2,6 +2,7 @@ import csv
 import os
 import secrets
 from datetime import datetime
+from pathlib import Path
 
 from algorithms import calculate_all_results
 from flask import Flask, redirect, render_template, request, session, url_for
@@ -13,6 +14,11 @@ DATA_DIR = "data"
 ADMIN_USER = "admin"
 ADMIN_PASS = "admin"
 
+# Change directory to the one this file is in.
+os.chdir(Path(__file__).resolve().parent)
+print(f"Current working directory:\n{os.getcwd()}")
+# Disable formatting to not mess around with the rest of the file:
+# fmt: off
 os.makedirs(DATA_DIR, exist_ok=True) # i sweat to god if you delete this i will delete your first born child
 
 # ============== CSV GARBAGE ==============
