@@ -334,7 +334,7 @@ def kemeny_young(parsed_votes, option_names):
     print(f"Optimal subset ranking costs computed:")
     for i, s in enumerate(subset_cost):
         print(
-            f"Cbar({set(s) if s else "{ }"}) = {subset_cost[s]}",
+            f"Cbar({set(s) if s else "Ø"}) = {subset_cost[s]}",
             end=("\t" if i != len(subset_cost) - 1 else "\n"),
         )
     print(f"Non-trivial ranking is ->{π2}")

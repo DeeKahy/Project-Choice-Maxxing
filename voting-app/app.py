@@ -17,11 +17,13 @@ ADMIN_PASS = "admin"
 # Change directory to the one this file is in.
 os.chdir(Path(__file__).resolve().parent)
 print(f"Current working directory:\n{os.getcwd()}")
-# Disable formatting to not mess around with the rest of the file:
-# fmt: off
-os.makedirs(DATA_DIR, exist_ok=True) # i sweat to god if you delete this i will delete your first born child
+
+os.makedirs(
+    DATA_DIR, exist_ok=True
+)  # i sweat to god if you delete this i will delete your first born child
 
 # ============== CSV GARBAGE ==============
+
 
 def read_csv(filepath):
     if not os.path.exists(filepath):
@@ -29,12 +31,14 @@ def read_csv(filepath):
     with open(filepath, "r", newline="", encoding="utf-8") as f:
         return list(csv.DictReader(f))
 
+
 def write_csv(filepath, rows, fieldnames):
     """Write list of dicts to CSV"""
     with open(filepath, "w", newline="", encoding="utf-8") as f:
         writer = csv.DictWriter(f, fieldnames=fieldnames)
         writer.writeheader()
         writer.writerows(rows)
+
 
 def append_csv(filepath, row, fieldnames):
     """Append single row to CSV, create if needed"""
@@ -48,47 +52,64 @@ def append_csv(filepath, row, fieldnames):
 
 # ============== POLL GARBAGE ==============
 
+
 def get_polls():
     return read_csv(f"{DATA_DIR}/polls.csv")
+
 
 def get_poll(poll_id):
     polls = get_polls()
     return next((p for p in polls if p["id"] == poll_id), None)
 
+
 def get_options(poll_id):
     return read_csv(f"{DATA_DIR}/options_{poll_id}.csv")
+
 
 def get_votes(poll_id):
     return read_csv(f"{DATA_DIR}/votes_{poll_id}.csv")
 
+
 def save_polls(polls):
-    write_csv(f"{DATA_DIR}/polls.csv", polls,
-              ["id", "title", "description", "created_at", "is_open", "max_score"])
+    write_csv(
+        f"{DATA_DIR}/polls.csv",
+        polls,
+        ["id", "title", "description", "created_at", "is_open", "max_score"],
+    )
+
 
 def generate_id():
     return secrets.token_urlsafe(6)
 
+
 # ============== YOUR SECURITY NIGHTMARE ==============
+
 
 def is_admin():
     return session.get("admin") == True
 
+
 @app.route("/admin", methods=["GET", "POST"])
 def admin_login():
     if request.method == "POST":
-        if (request.form["username"] == ADMIN_USER and
-            request.form["password"] == ADMIN_PASS):
+        if (
+            request.form["username"] == ADMIN_USER
+            and request.form["password"] == ADMIN_PASS
+        ):
             session["admin"] = True
             return redirect(url_for("admin_dashboard"))
         return render_template("admin_login.html", error="Invalid credentials")
     return render_template("admin_login.html")
+
 
 @app.route("/admin/logout")
 def admin_logout():
     session.pop("admin", None)
     return redirect(url_for("admin_login"))
 
+
 # ============== "SECURE" ROUTES ==============
+
 
 @app.route("/admin/dashboard")
 def admin_dashboard():
@@ -96,6 +117,7 @@ def admin_dashboard():
         return redirect(url_for("admin_login"))
     polls = get_polls()
     return render_template("admin_dashboard.html", polls=polls)
+
 
 @app.route("/admin/create", methods=["GET", "POST"])
 def admin_create():
@@ -110,21 +132,31 @@ def admin_create():
             "description": request.form.get("description", ""),
             "created_at": datetime.now().isoformat(),
             "is_open": "true",
-            "max_score": request.form.get("max_score", "5")
+            "max_score": request.form.get("max_score", "5"),
         }
-        append_csv(f"{DATA_DIR}/polls.csv", poll,
-                   ["id", "title", "description", "created_at", "is_open", "max_score"])
+        append_csv(
+            f"{DATA_DIR}/polls.csv",
+            poll,
+            ["id", "title", "description", "created_at", "is_open", "max_score"],
+        )
 
         # Save options
         options = request.form.getlist("options")
-        option_rows = [{"id": i+1, "name": opt, "description": ""}
-                       for i, opt in enumerate(options) if opt.strip()]
-        write_csv(f"{DATA_DIR}/options_{poll_id}.csv", option_rows,
-                  ["id", "name", "description"])
+        option_rows = [
+            {"id": i + 1, "name": opt, "description": ""}
+            for i, opt in enumerate(options)
+            if opt.strip()
+        ]
+        write_csv(
+            f"{DATA_DIR}/options_{poll_id}.csv",
+            option_rows,
+            ["id", "name", "description"],
+        )
 
         return redirect(url_for("admin_poll", poll_id=poll_id))
 
     return render_template("admin_create.html")
+
 
 @app.route("/admin/poll/<poll_id>")
 def admin_poll(poll_id):
@@ -141,7 +173,10 @@ def admin_poll(poll_id):
     # Calculate results using all methods
     results = calculate_all_results(votes, options, int(poll.get("max_score", 5)))
 
-    return render_template("admin_poll.html", poll=poll, options=options, votes=votes, results=results)
+    return render_template(
+        "admin_poll.html", poll=poll, options=options, votes=votes, results=results
+    )
+
 
 @app.route("/admin/poll/<poll_id>/delete_vote/<username>", methods=["POST"])
 def delete_vote(poll_id, username):
@@ -157,17 +192,18 @@ def delete_vote(poll_id, username):
 
     return redirect(url_for("admin_poll", poll_id=poll_id))
 
+
 @app.route("/admin/poll/<poll_id>/toggle", methods=["POST"])
 def toggle_poll(poll_id):
     if not is_admin():
         return redirect(url_for("admin_login"))
-    
+
     polls = get_polls()
     for p in polls:
         if p["id"] == poll_id:
             p["is_open"] = "false" if p["is_open"] == "true" else "true"
     save_polls(polls)
-    
+
     return redirect(url_for("admin_poll", poll_id=poll_id))
 
 
@@ -191,7 +227,9 @@ def delete_poll(poll_id):
 
     return redirect(url_for("admin_dashboard"))
 
+
 # ============== VOTING ROUTES ==============
+
 
 @app.route("/vote/<poll_id>", methods=["GET", "POST"])
 def vote(poll_id):
@@ -200,38 +238,48 @@ def vote(poll_id):
         return "Poll not found", 404
     if poll["is_open"] != "true":
         return redirect(url_for("results", poll_id=poll_id))
-        
+
     options = get_options(poll_id)
     max_score = int(poll.get("max_score", 5))
-    
+
     if request.method == "POST":
         username = request.form["username"].strip()
         if not username:
-            return render_template("vote.html", poll=poll, options=options, 
-                                  max_score=max_score, error="Username required")
-        
+            return render_template(
+                "vote.html",
+                poll=poll,
+                options=options,
+                max_score=max_score,
+                error="Username required",
+            )
+
         # Check if user already voted
         votes = get_votes(poll_id)
         if any(v["username"] == username for v in votes):
-            return render_template("vote.html", poll=poll, options=options,
-                                  max_score=max_score, error="You already voted!")
-        
-        vote_row = {
-            "username": username,
-            "submitted_at": datetime.now().isoformat()
-        }
-        
+            return render_template(
+                "vote.html",
+                poll=poll,
+                options=options,
+                max_score=max_score,
+                error="You already voted!",
+            )
+
+        vote_row = {"username": username, "submitted_at": datetime.now().isoformat()}
+
         for opt in options:
             score = request.form.get(f"score_{opt['id']}", "0")
             vote_row[f"option_{opt['id']}"] = score
-        
-        fieldnames = ["username", "submitted_at"] + [f"option_{o['id']}" for o in options]
-        append_csv(f"{DATA_DIR}/votes_{poll_id}.csv", vote_row, fieldnames)
-        
-        return render_template("results.html", poll=poll)
-    
-    return render_template("voting.html", poll=poll, options=options, max_score=max_score)
 
+        fieldnames = ["username", "submitted_at"] + [
+            f"option_{o['id']}" for o in options
+        ]
+        append_csv(f"{DATA_DIR}/votes_{poll_id}.csv", vote_row, fieldnames)
+
+        return render_template("results.html", poll=poll)
+
+    return render_template(
+        "voting.html", poll=poll, options=options, max_score=max_score
+    )
 
 
 @app.route("/results/<poll_id>")
@@ -246,14 +294,18 @@ def results(poll_id):
     # Calculate results using all methods
     results = calculate_all_results(votes, options, int(poll.get("max_score", 5)))
 
-    return render_template("results.html", poll=poll, options=options, votes=votes, results=results)
+    return render_template(
+        "results.html", poll=poll, options=options, votes=votes, results=results
+    )
 
 
 # ============== HOME ==============
 
+
 @app.route("/")
 def home():
     return redirect(url_for("admin_login"))
+
 
 # ============== RUN ==============
 
