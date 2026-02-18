@@ -18,7 +18,7 @@ os.chdir(Path(__file__).resolve().parent)
 print(f"Current working directory:\n{os.getcwd()}")
 # Disable formatting to not mess around with the rest of the file:
 # fmt: off
-os.makedirs(DATA_DIR, exist_ok=True) # i sweat to god if you delete this i will delete your first born child
+os.makedirs(DATA_DIR, exist_ok=True) # i swear to god if you delete this i will delete your first born child
 
 # ============== CSV GARBAGE ==============
 
