@@ -1,0 +1,19 @@
+version: '3.8'
+
+services:
+  voting-app:
+    image: ${DOCKERHUB_USERNAME}/voting-app:latest
+    container_name: voting-app
+    ports:
+      - "5000:5000"
+    volumes:
+      # This mounts a persistent volume for data storage
+      - voting_data:/app/data
+    restart: unless-stopped
+    environment:
+      - FLASK_ENV=production
+
+volumes:
+  # This creates a named volume that persists between container updates
+  voting_data:
+    driver: local

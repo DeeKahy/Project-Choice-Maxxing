@@ -3,7 +3,6 @@ import os
 import secrets
 from datetime import datetime
 from pathlib import Path
-
 from algorithms import calculate_all_results
 from flask import Flask, redirect, render_template, request, session, url_for
 
