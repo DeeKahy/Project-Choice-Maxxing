@@ -170,6 +170,10 @@ def star_voting(parsed_votes, option_names):
 def kemeny_young(parsed_votes, option_names, brute_force=False):
     """Kemeny-Young rule/Kemeny method. Set brute_force=True to verify the result using brute-force."""
     # Gonna be lots of comments in this one. Based it on a math paper so steel yourself.
+    # Sources are this book chapter for the entire algorithm:
+    # https://link.springer.com/chapter/10.1007/978-3-642-17517-6_3
+    # And this paper for the weighted indegree-sorting used to produce the initial ranking:
+    # https://cse.buffalo.edu/faculty/atri/papers/algos/FAS-journal-final.pdf
     preferences = find_preferences(parsed_votes, mask=option_names.index)
     # With the preferences known, we now have to find the sequence of candidates that satisfies the most voters' preferences.
     # This is NP-hard and slow and awful no matter what, especially with more candidates.
