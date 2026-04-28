@@ -167,9 +167,13 @@ def star_voting(parsed_votes, option_names):
     return ranking
 
 
-def kemeny_young(parsed_votes, option_names):
-    """Kemeny-Young rule/Kemeny method"""
+def kemeny_young(parsed_votes, option_names, brute_force=False):
+    """Kemeny-Young rule/Kemeny method. Set brute_force=True to verify the result using brute-force."""
     # Gonna be lots of comments in this one. Based it on a math paper so steel yourself.
+    # Sources are this book chapter for the entire algorithm:
+    # https://link.springer.com/chapter/10.1007/978-3-642-17517-6_3
+    # And this paper for the weighted indegree-sorting used to produce the initial ranking:
+    # https://cse.buffalo.edu/faculty/atri/papers/algos/FAS-journal-final.pdf
     preferences = find_preferences(parsed_votes, mask=option_names.index)
     # With the preferences known, we now have to find the sequence of candidates that satisfies the most voters' preferences.
     # This is NP-hard and slow and awful no matter what, especially with more candidates.
@@ -189,7 +193,7 @@ def kemeny_young(parsed_votes, option_names):
     for A, B in preferences:
         if preferences[(A, B)] >= preferences[(B, A)]:
             print(f"{A} is preferred to {B} by {preferences[(A, B)]}")
-    # V = option_names.copy()
+    # V will stand in for option_names to ensure deterministic behaviour (hashes of strings change with each run!).
     V = list(range(len(option_names)))
     # For us, sorting by weighted indegree means sorting by the sum of preferences for each candidate, which gets us the following ranking:
     π1 = sorted(
@@ -203,21 +207,19 @@ def kemeny_young(parsed_votes, option_names):
     print(f"Initial ranking is ->{π1} with cost {C(π1)}")
     # b computes the weight of the arcs incident to v in the ordering formed by moving v to position p in π.
     b = lambda π, v, p: sum(
-        [
-            (preferences[(u, v)], preferences[(v, u)])[p > π.index(u)]
-            for u in V
-            if u != v and p != π.index(u)
-        ]
+        (preferences[(u, v)], preferences[(v, u)])[p > π.index(u)]
+        for u in V
+        if u != v and p != π.index(u)
     )
     # r defines the uncertainty of each candidate's placement in the ranking.
     r = {v: (4 * sqrt(2 * C(π1))) + (2 * b(π1, v, π1.index(v))) for v in V}
-    # We need to find a new ranking π2 such that |π2(v) − π1(v)| ≤ r(v) for all v.
     print("Uncertainties computed:")
     for i, v in enumerate(V):
         print(
             f"r({v}) = {r[v]}",
             end=("\t" if i != len(V) - 1 else "\n"),
         )
+    # We need to find a new ranking π2 such that |π2(v) − π1(v)| ≤ r(v) for all v.
     # Dynamic programming will allow us to do that. But first we need to compute a kernel, to actually achieve our desired performance.
     # The kernel is computed with a majority tournament, which is an unweighted graph of all the majority preferences:
     mt = [
@@ -235,7 +237,9 @@ def kemeny_young(parsed_votes, option_names):
                 mt.remove((B, A))
                 tied = True
                 break
-    print(f"Tiebreaking completed with {len(mt)} edges remaining.")
+    print(
+        f"Tiebreaking completed with {len(mt)} {"edges" if len(mt)!=1 else "edge"} remaining."
+    )
     # We apply reduction rules to compute the kernel. The first rule removes any vertex that is not part of a triangle (3-arc cycle)
     # The second rule concerns arcs that are present in more than 2U triangles, so let's get some triangles.
     triangles = lambda mt: {
@@ -243,63 +247,60 @@ def kemeny_young(parsed_votes, option_names):
     }
     in_triangle = lambda v, ts: any(v in t for t in ts)
     in_triangles = lambda v, u, ts: sum((v in t and u in t) for t in ts if (v, u) in mt)
+    mt_cost = lambda mt: sum(preferences[(A, B)] for (A, B) in mt)
     # U will be somewhere between the optimal cost and 5 times the optimal cost.
     # At the end of kernelization it should be equal to the initial cost C(π1),
     # which indicates that the kernel is a more compact version of our existing problem, as intended.
     U = C(π1)
     must_pay = 0
-    trivial_len = -1
-    flips = -1
     trivial = []  # [(vertex, predecessor set, successor set)]
-    while len(trivial) != trivial_len and flips:
-        trivial_len = len(trivial)
+    while True:
         ts = triangles(mt)
         # First reduction rule: Eliminate vertices that aren't part of a triangle. These are trivial to insert into the ranking.
         # Record their immediate predecessors and successors. We will use those to insert them into the ranking later.
-        triangle_free = [
+        triangle_free = [v for v in V if not in_triangle(v, ts)]
+        trivial += [
             (v, {A for (A, B) in mt if B == v}, {B for (A, B) in mt if A == v})
-            for v in V
-            if not in_triangle(v, ts)
+            for v in triangle_free
         ]
-        # Note that we add the cost of including trivial vertices to U, since we still have to pay for them.
-        must_pay += sum(preferences[(A, B)] for (A, B) in mt)
-        mt = [
-            (A, B)
-            for (A, B) in mt
-            if (A not in (v for v, _, _ in triangle_free))
-            and (B not in (v for v, _, _ in triangle_free))
-        ]
-        must_pay -= sum(preferences[(A, B)] for (A, B) in mt)
+        # Note that we remember the cost of including trivial vertices, since we still have to pay for them later.
         if triangle_free:
-            print(f"Kernelization found {len(triangle_free)} trivial vertices.")
-        trivial += triangle_free
+            print(
+                f"Kernelization found {len(triangle_free)} trivial {"vertices" if len(triangle_free)!=1 else "vertex"}."
+            )
+            must_pay += mt_cost(mt)
+            mt = [e for e in mt for v in triangle_free if v not in e]
+            must_pay -= mt_cost(mt)
+            for v in triangle_free:
+                # v can be trivially ranked so we can remove it from V to make the dynamic programming-part run faster.
+                V.remove(v)
+
         # Second reduction rule: Flip edges that are in more than 2U triangles and set their weight to 1, and always add their original weight to U.
         flipped = [(A, B) for (A, B) in mt if in_triangles(A, B, ts) > (2 * U)]
-        flips = len(flipped)
         mt = [(B, A) if (A, B) in flipped else (A, B) for (A, B) in mt]
         for A, B in flipped:
             # Note that (A,B) from mt is (B,A) in preferences. Might want to homogenize that at some point.
             must_pay += preferences[(B, A)]
             preferences[(B, A)] = 0
             preferences[(A, B)] = 1
-        if flips:
+        if flipped:
             print(
-                f"Kernelization flipped and hardened {flips} edges that were in more than 2*U ({2*U}) triangles."
+                f"Kernelization flipped and hardened {len(flipped)} {"edges that were" if len(flipped)!=1 else "edge that was"} in more than 2*U ({2*U}) triangles."
             )
-    U = sum(preferences[(A, B)] for (A, B) in mt) + must_pay
-    if U != C(π1):  # Kernel cost and initial cost must agree, or the kernel is invalid!
-        raise RuntimeError(
-            f"Sanity check failed: Kernel cost {U} does not agree with initial cost {C(π1)}"
-        )
-    print(f"The following vertices are trivial:")
-    for v, p, s in trivial:
-        print(
-            f"'{v}' comes after {p if p else "nothing"} and before {s if s else "nothing"}{" (first place in ranking)" if not s else " (last place in ranking)" if not p  else ""}."
-        )
-        # v can be trivially ranked so we can remove it from V to make the dynamic programming-part run faster.
-        V.remove(v)
+        if not (flipped or triangle_free):
+            break  # Break the loop if we didn't flip any edges or eliminate any vertices.
 
-    # Now we've modified weights to make our life easier and found the cost for an optimal ranking.
+    # Now we've modified weights to make our life easier and saved trivial vertices for later.
+    if trivial:
+        print(f"The following vertices are trivial:")
+        for v, p, s in trivial:
+            print(
+                f"'{v}' comes after {p if p else "nothing"} and before {s if s else "nothing"}{" (first place in ranking)" if not s else " (last place in ranking)" if not p  else ""}."
+            )
+    if U < mt_cost(mt) + must_pay:
+        raise RuntimeError(  # Kernel cost must not be greater than the initial cost, or the kernel is invalid!
+            f"Sanity check failed: Kernel cost {mt_cost(mt) + must_pay} is greater than initial cost {C(π1)}"
+        )
     # It's time for dynamic programming so we can find our optimal ranking π2.
     valid = lambda S: (
         all(v in S for v in V if (π1.index(v) <= (len(S) - r[v])))
@@ -331,12 +332,13 @@ def kemeny_young(parsed_votes, option_names):
                 π2.append(v)
                 T -= {v}
                 break
-    print(f"Optimal subset ranking costs computed:")
-    for i, s in enumerate(subset_cost):
-        print(
-            f"Cbar({set(s) if s else "Ø"}) = {subset_cost[s]}",
-            end=("\t" if i != len(subset_cost) - 1 else "\n"),
-        )
+    if V:
+        print(f"Optimal subset ranking costs computed:")
+        for i, s in enumerate(subset_cost):
+            print(
+                f"Cbar({set(s) if s else "Ø"}) = {subset_cost[s]}",
+                end=("\t" if i != len(subset_cost) - 1 else "\n"),
+            )
     print(f"Non-trivial ranking is ->{π2}")
 
     # Now we have ranked the non-trivial candidates. It's time to insert the trivial ones.
@@ -344,15 +346,35 @@ def kemeny_young(parsed_votes, option_names):
         # v should come after all its predecessors and before all its successors. (Predecessors being vertices lower in the ranking)
         max_s = max(map(π2.index, s & set(π2)), default=0)
         min_p = min(map(π2.index, p & set(π2)), default=len(π2))
-        if (
-            min_p < max_s
-        ):  # No predecessor may come after a successor! This is a sign that the non-trivial part has gone wrong.
-            raise RuntimeError(
+        if min_p < max_s:
+            raise RuntimeError(  # No predecessor may come after a successor! This is a sign that the non-trivial part has gone wrong.
                 f"Sanity check failed: Predecessors {p} and successors {s} overlap in ranking {π2}."
             )
         π2.insert(min_p, v)
     print(f"Final ranking is ->{π2} with cost {C(π2)}")
+    if brute_force and (cost := KY_brute_force(option_names, C)) != C(π2):
+        raise RuntimeError(  # The solution should have the same cost as the optimal brute-force solution.
+            f"Sanity check failed: Final cost {C(π2)} does not agree with brute-force optimal cost {cost}"
+        )
     return [(option_names[v], C(π2[i:])) for i, v in enumerate(π2)]
+
+
+def KY_brute_force(option_names, C):
+    """Brute-force optimal cost of the Kemeny-Young method.\n
+    Do not, under any circumstances, use this for anything other than testing."""
+    optimal_solutions = []
+    optimal_cost = len(option_names)
+    print("Starting brute-force attempt.")
+    for π in permutations(range(len(option_names))):
+        if (cost := C(π)) < optimal_cost:
+            optimal_solutions = [π]
+            optimal_cost = cost
+        elif cost == optimal_cost:
+            optimal_solutions.append(π)
+    print(f"Brute-force finds the following rankings with optimal cost {optimal_cost}:")
+    for π in optimal_solutions:
+        print(f"->{list(π)}")
+    return optimal_cost
 
 
 # ============== MAIN ENTRY ==============
