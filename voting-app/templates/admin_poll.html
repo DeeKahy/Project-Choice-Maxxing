@@ -20,12 +20,14 @@
 
     <div class="mt-1" style="display: flex; gap: 0.5rem; flex-wrap: wrap">
         <form method="POST" action="{{ url_for('toggle_poll', poll_id=poll.id) }}" style="display: inline">
+            <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
             <button type="submit" class="btn btn-small">
                 {{ 'Close Poll' if poll.is_open == 'true' else 'Reopen Poll' }}
             </button>
         </form>
         <form method="POST" action="{{ url_for('delete_poll', poll_id=poll.id) }}" style="display: inline;"
             onsubmit="return confirm('Are you sure you want to delete this poll?');">
+            <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
             <button type="submit" class="btn btn-danger btn-small">Delete Poll</button>
         </form>
     </div>
@@ -67,6 +69,7 @@
         </div>
         <form method="POST" action="{{ url_for('delete_vote', poll_id=poll.id, username=vote.username) }}" onsubmit="return confirm('
             Delete vote from {{ vote.username }}?');">
+            <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
             <button type="submit" class="btn btn-danger btn-small">x</button>
         </form>
     </div>

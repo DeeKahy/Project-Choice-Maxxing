@@ -1,12 +1,34 @@
 {% extends "base.html" %}
-{% block title %}Admin Dashboard{% endblock %}
+{% block title %}Dashboard{% endblock %}
 {% block content %}
 <div class="header-row">
     <h1>Polls</h1>
-    <a href="{{ url_for('admin_logout') }}" class="btn btn-secondary btn-small">Logout</a>
+    <div style="display: flex; gap: 0.5rem; flex-wrap: wrap;">
+        {% if is_admin %}
+        <a href="{{ url_for('admin_users') }}" class="btn btn-secondary btn-small">Users</a>
+        {% endif %}
+        <a href="{{ url_for('admin_change_password') }}" class="btn btn-secondary btn-small">Change Password</a>
+        <a href="{{ url_for('admin_logout') }}" class="btn btn-secondary btn-small">Logout</a>
+    </div>
 </div>
 
+{% if current %}
+<p class="text-muted" style="font-size: 0.875rem;">
+    Signed in as <strong>{{ current.username }}</strong>{% if is_admin %} (admin){% endif %}.
+    {% if not is_admin %}
+        You're using <strong>{{ poll_count }} / {{ poll_limit }}</strong> polls.
+    {% endif %}
+</p>
+{% endif %}
+
+{% if at_limit %}
+<p class="error">
+    You've reached the {{ poll_limit }}-poll limit. Delete an old poll to create a new one.
+</p>
+<button type="button" class="btn btn-block mb-1" disabled>+ Create New Poll (limit reached)</button>
+{% else %}
 <a href="{{ url_for('admin_create') }}" class="btn btn-block mb-1">+ Create New Poll</a>
+{% endif %}
 
 {% if polls %}
     {% for poll in polls %}
@@ -20,7 +42,9 @@
         {% if poll.description %}
         <p class="text-muted">{{ poll.description }}</p>
         {% endif %}
-        <p class="text-muted" style="font-size: 0.875rem;">Created: {{ poll.created_at[:10] }}</p>
+        <p class="text-muted" style="font-size: 0.875rem;">
+            Created: {{ poll.created_at[:10] }}{% if is_admin and poll.owner %} · by {{ poll.owner }}{% endif %}
+        </p>
         <div class="mt-1">
             <a href="{{ url_for('admin_poll', poll_id=poll.id) }}" class="btn btn-small">Manage</a>
         </div>

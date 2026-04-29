@@ -63,3 +63,32 @@ If you prefer not to use Nix:
 
 The app includes Docker support with persistent data volumes. See the modified Dockerfile that preserves poll data between deployments.
 
+## Configuration
+
+The app reads configuration from environment variables:
+
+| Variable | Default | Purpose |
+| --- | --- | --- |
+| `HOST` | `0.0.0.0` | Bind address |
+| `PORT` | `5000` | Bind port |
+| `FLASK_DEBUG` | `0` | `1` enables the Werkzeug debugger — **never** in production |
+| `FLASK_SECRET_KEY` | auto-generated to `data/.secret_key` | Session signing key. Set explicitly in production |
+| `FLASK_ADMIN_USER` | `admin` | Username seeded on first launch when `data/users.csv` is empty |
+| `FLASK_ADMIN_PASS` | `admin` | Password seeded on first launch. **Change this immediately after first login.** |
+| `MAX_POLLS_PER_USER` | `50` | Per-user poll cap. Admins are exempt. |
+
+## Accounts
+
+Anyone can sign up at `/signup` to create a regular (non-admin) account. New accounts can create up to `MAX_POLLS_PER_USER` polls (50 by default); when they hit the cap they're shown a popup telling them to delete an old poll. Admins are exempt from the cap and can manage every poll plus other users.
+
+Admins can promote/demote/delete other users from **Users** in the dashboard header. Anyone can change their own password under **Change Password**.
+
+## Testing
+
+```bash
+cd voting-app
+python3 -m pytest
+```
+
+The suite covers auth, poll CRUD, voting (including the previously-crashing blank/duplicate username paths), and the five voting algorithms. Requires Python 3.12+ historically, but inner-quote f-strings have been rewritten so 3.10+ works.
+

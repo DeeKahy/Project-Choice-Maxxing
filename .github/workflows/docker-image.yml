@@ -7,7 +7,25 @@ on:
   workflow_dispatch:
 
 jobs:
+  test:
+    # Run the same suite the tests.yml workflow uses, so we never push an
+    # image built from a regression that pytest would have caught.
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.12"
+          cache: pip
+      - name: Install dependencies
+        working-directory: voting-app
+        run: pip install -r requirements.txt
+      - name: Run pytest
+        working-directory: voting-app
+        run: python -m pytest
+
   build-and-push:
+    needs: test
     runs-on: ubuntu-latest
 
     steps:
