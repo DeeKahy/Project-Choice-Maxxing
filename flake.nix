@@ -40,7 +40,7 @@
           export FLASK_ENV=development
           export FLASK_DEBUG=1
           export FLASK_APP=app.py
-          ${pythonEnv}/bin/flask run --host=0.0.0.0 --port=5000 --reload
+          ${pythonEnv}/bin/flask run --host=0.0.0.0 --port=5001 --reload
         '';
 
         # Docker build script

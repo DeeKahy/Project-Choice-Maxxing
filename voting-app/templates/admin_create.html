@@ -6,46 +6,88 @@
     <a href="{{ url_for('admin_dashboard') }}" class="btn btn-secondary btn-small">← Back</a>
 </div>
 
+{% if error %}<p class="error">{{ error }}</p>{% endif %}
+
+{% if not is_admin and poll_limit %}
+<p class="text-muted" style="font-size: 0.875rem;">
+    You're using <strong>{{ poll_count }} / {{ poll_limit }}</strong> polls.
+</p>
+{% endif %}
+
+{# When the per-user poll limit is hit, throw a real alert popup AND keep
+   the inline banner so the message is impossible to miss. #}
+{% if limit_reached %}
+<script>
+window.addEventListener('DOMContentLoaded', function () {
+    alert({{ error|tojson }});
+});
+</script>
+{% endif %}
+
+{# On validation failure the route re-renders this template with the values
+   the user submitted so they don't have to retype everything. #}
+{% set _title = form_title|default('') %}
+{% set _description = form_description|default('') %}
+{% set _max_score = form_max_score|default('5') %}
+{% set _options = form_options|default(['', '', '']) %}
+
 <form method="POST" id="poll-form">
+    <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
     <div class="card">
         <label for="title">Poll Title *</label>
-        <input type="text" name="title" id="title" required placeholder="e.g., Friday Dinner">
-        
+        <input type="text" name="title" id="title" required maxlength="200"
+               value="{{ _title }}" placeholder="e.g., Friday Dinner">
+
         <label for="description">Description (optional)</label>
-        <input type="text" name="description" id="description" placeholder="e.g., Where should we eat?">
-        
+        <input type="text" name="description" id="description" maxlength="1000"
+               value="{{ _description }}" placeholder="e.g., Where should we eat?">
+
         <label for="max_score">Max Score</label>
         <select name="max_score" id="max_score">
-            <option value="3">0-3</option>
-            <option value="5" selected>0-5</option>
-            <option value="10">0-10</option>
+            <option value="3" {% if _max_score == '3' %}selected{% endif %}>0-3</option>
+            <option value="5" {% if _max_score == '5' %}selected{% endif %}>0-5</option>
+            <option value="10" {% if _max_score == '10' %}selected{% endif %}>0-10</option>
         </select>
     </div>
-    
+
     <div class="card">
         <h2>Options</h2>
-        <p class="text-muted mb-1">Add at least 2 options for voters to choose from</p>
-        
+        <p class="text-muted mb-1">Add at least 2 distinct, non-blank options for voters to choose from</p>
+
         <div id="options-container">
-            <input type="text" name="options" placeholder="Option 1" required>
-            <input type="text" name="options" placeholder="Option 2" required>
-            <input type="text" name="options" placeholder="Option 3">
+            {% for opt in _options %}
+            <input type="text" name="options" maxlength="200"
+                   value="{{ opt }}" placeholder="Option {{ loop.index }}"
+                   {% if loop.index <= 2 %}required{% endif %}>
+            {% endfor %}
+            {# Always render at least 2 inputs even when nothing was submitted yet #}
+            {% if _options|length < 2 %}
+                {% for i in range(2 - _options|length) %}
+                <input type="text" name="options" maxlength="200"
+                       placeholder="Option {{ _options|length + loop.index }}" required>
+                {% endfor %}
+            {% endif %}
         </div>
-        
+
         <button type="button" class="btn btn-secondary btn-small mt-1" onclick="addOption()">+ Add Option</button>
     </div>
-    
-    <button type="submit" class="btn btn-block">Create Poll</button>
+
+    {% if limit_reached %}
+        <button type="button" class="btn btn-block" disabled>Limit reached — delete an old poll first</button>
+    {% else %}
+        <button type="submit" class="btn btn-block">Create Poll</button>
+    {% endif %}
 </form>
 
 <script>
-let optionCount = 3;
+let optionCount = document.querySelectorAll('#options-container input[name="options"]').length;
 function addOption() {
     optionCount++;
     const container = document.getElementById('options-container');
     const input = document.createElement('input');
     input.type = 'text';
     input.name = 'options';
+    input.maxLength = 200;
     input.placeholder = 'Option ' + optionCount;
     container.appendChild(input);
 }

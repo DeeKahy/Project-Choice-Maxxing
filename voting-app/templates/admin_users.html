@@ -1,0 +1,29 @@
+{% extends "base.html" %}
+{% block title %}Users{% endblock %}
+{% block content %}
+<div class="header-row">
+    <h1>Users</h1>
+    <a href="{{ url_for('admin_dashboard') }}" class="btn btn-secondary btn-small">← Back</a>
+</div>
+
+<a href="{{ url_for('admin_users_create') }}" class="btn btn-block mb-1">+ Create User</a>
+
+{% for u in users %}
+<div class="card">
+    <div class="poll-header">
+        <h3>{{ u.username }}{% if current and u.username == current.username %} <span class="text-muted" style="font-size: 0.875rem;">(you)</span>{% endif %}</h3>
+        <span class="status-badge {% if u.is_admin == 'true' %}status-open{% else %}status-closed{% endif %}">
+            {{ 'Admin' if u.is_admin == 'true' else 'User' }}
+        </span>
+    </div>
+    <p class="text-muted" style="font-size: 0.875rem;">Created: {{ u.created_at[:10] }}</p>
+    {% if not current or u.username != current.username %}
+    <form method="POST" action="{{ url_for('admin_users_delete', username=u.username) }}"
+          onsubmit="return confirm('Delete user {{ u.username }}?');">
+        <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+        <button type="submit" class="btn btn-danger btn-small">Delete</button>
+    </form>
+    {% endif %}
+</div>
+{% endfor %}
+{% endblock %}

@@ -33,15 +33,15 @@
     {% endfor %}
 </div>
 
-<!-- Borda Count Voting -->
+<!-- Borda Count -->
 <div class="card">
-    <h3>Schulze Method</h3>
-    <p class="text-muted" style="font-size: 0.875rem">Sum of all scores</p>
-    {% for name, wins in results.borda_count %}
+    <h3>Borda Count</h3>
+    <p class="text-muted" style="font-size: 0.875rem">Ranked-choice converted to points</p>
+    {% for name, score in results.borda_count %}
     <div class="result-row">
         <span class="result-rank">{{ loop.index }}</span>
         <span style="flex: 1">{{ name }}</span>
-        <span><strong>{{ scores }}</strong> Scores</span>
+        <span><strong>{{ score }}</strong> pts</span>
     </div>
     {% endfor %}
 </div>

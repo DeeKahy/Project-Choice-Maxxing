@@ -12,6 +12,14 @@ services:
     restart: unless-stopped
     environment:
       - FLASK_ENV=production
+      - FLASK_DEBUG=0
+      # IMPORTANT: set FLASK_SECRET_KEY to a long random string in production.
+      # Without it the key is auto-generated into /app/data/.secret_key, which
+      # works but is harder to rotate and audit.
+      # - FLASK_SECRET_KEY=replace-me-with-a-random-64-char-string
+      # Initial admin credentials seeded on first boot only:
+      # - FLASK_ADMIN_USER=admin
+      # - FLASK_ADMIN_PASS=change-me
 
 volumes:
   # This creates a named volume that persists between container updates

@@ -238,7 +238,7 @@ def kemeny_young(parsed_votes, option_names, brute_force=False):
                 tied = True
                 break
     print(
-        f"Tiebreaking completed with {len(mt)} {"edges" if len(mt)!=1 else "edge"} remaining."
+        f"Tiebreaking completed with {len(mt)} {'edges' if len(mt) != 1 else 'edge'} remaining."
     )
     # We apply reduction rules to compute the kernel. The first rule removes any vertex that is not part of a triangle (3-arc cycle)
     # The second rule concerns arcs that are present in more than 2U triangles, so let's get some triangles.
@@ -266,7 +266,7 @@ def kemeny_young(parsed_votes, option_names, brute_force=False):
         # Note that we remember the cost of including trivial vertices, since we still have to pay for them later.
         if triangle_free:
             print(
-                f"Kernelization found {len(triangle_free)} trivial {"vertices" if len(triangle_free)!=1 else "vertex"}."
+                f"Kernelization found {len(triangle_free)} trivial {'vertices' if len(triangle_free) != 1 else 'vertex'}."
             )
             must_pay += mt_cost(mt)
             mt = [e for e in mt for v in triangle_free if v not in e]
@@ -285,7 +285,7 @@ def kemeny_young(parsed_votes, option_names, brute_force=False):
             preferences[(A, B)] = 1
         if flipped:
             print(
-                f"Kernelization flipped and hardened {len(flipped)} {"edges that were" if len(flipped)!=1 else "edge that was"} in more than 2*U ({2*U}) triangles."
+                f"Kernelization flipped and hardened {len(flipped)} {'edges that were' if len(flipped) != 1 else 'edge that was'} in more than 2*U ({2 * U}) triangles."
             )
         if not (flipped or triangle_free):
             break  # Break the loop if we didn't flip any edges or eliminate any vertices.
@@ -295,7 +295,7 @@ def kemeny_young(parsed_votes, option_names, brute_force=False):
         print(f"The following vertices are trivial:")
         for v, p, s in trivial:
             print(
-                f"'{v}' comes after {p if p else "nothing"} and before {s if s else "nothing"}{" (first place in ranking)" if not s else " (last place in ranking)" if not p  else ""}."
+                f"'{v}' comes after {p if p else 'nothing'} and before {s if s else 'nothing'}{' (first place in ranking)' if not s else ' (last place in ranking)' if not p else ''}."
             )
     if U < mt_cost(mt) + must_pay:
         raise RuntimeError(  # Kernel cost must not be greater than the initial cost, or the kernel is invalid!
@@ -336,7 +336,7 @@ def kemeny_young(parsed_votes, option_names, brute_force=False):
         print(f"Optimal subset ranking costs computed:")
         for i, s in enumerate(subset_cost):
             print(
-                f"Cbar({set(s) if s else "Ø"}) = {subset_cost[s]}",
+                f"Cbar({set(s) if s else 'Ø'}) = {subset_cost[s]}",
                 end=("\t" if i != len(subset_cost) - 1 else "\n"),
             )
     print(f"Non-trivial ranking is ->{π2}")

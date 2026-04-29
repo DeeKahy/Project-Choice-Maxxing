@@ -1,0 +1,33 @@
+{% extends "base.html" %}
+{% block title %}Create User{% endblock %}
+{% block content %}
+<div class="header-row">
+    <h1>Create User</h1>
+    <a href="{{ url_for('admin_users') }}" class="btn btn-secondary btn-small">← Back</a>
+</div>
+
+{% if error %}<p class="error">{{ error }}</p>{% endif %}
+
+<form method="POST">
+    <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+    <div class="card">
+        <label for="username">Username</label>
+        <input type="text" name="username" id="username" required maxlength="32"
+               value="{{ form_username or '' }}"
+               placeholder="alphanumerics, underscore, hyphen">
+
+        <label for="password">Password</label>
+        <input type="password" name="password" id="password" required minlength="4">
+
+        <label for="confirm_password">Confirm Password</label>
+        <input type="password" name="confirm_password" id="confirm_password" required minlength="4">
+
+        <label style="display: flex; gap: 0.5rem; align-items: center; margin-top: 0.75rem;">
+            <input type="checkbox" name="is_admin" {% if form_is_admin %}checked{% endif %}>
+            Admin (can create polls and manage users)
+        </label>
+    </div>
+
+    <button type="submit" class="btn btn-block">Create User</button>
+</form>
+{% endblock %}

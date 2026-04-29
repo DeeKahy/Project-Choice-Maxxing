@@ -1,21 +1,26 @@
 {% extends "base.html" %}
-{% block title %}Admin Login{% endblock %}
+{% block title %}Log in{% endblock %}
 {% block content %}
 <div class="card">
-    <h1>Admin Login</h1>
-    
+    <h1>Log in</h1>
+
     {% if error %}
     <p class="error">{{ error }}</p>
     {% endif %}
-    
+
     <form method="POST">
+        <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
         <label for="username">Username</label>
         <input type="text" name="username" id="username" required placeholder="Enter username">
-        
+
         <label for="password">Password</label>
         <input type="password" name="password" id="password" required placeholder="Enter password">
-        
+
         <button type="submit" class="btn-block mt-1">Login</button>
     </form>
+
+    <p class="mt-1" style="font-size: 0.875rem;">
+        New here? <a href="{{ url_for('signup') }}">Create an account</a>.
+    </p>
 </div>
 {% endblock %}
