@@ -1,0 +1,27 @@
+# Nixpacks build config. The Flask app lives in voting-app/, not at the
+# repo root, so Nixpacks' default Python detector can't find it on its own.
+# This file points it at the right requirements file and start command.
+#
+# Coolify alternative: switch the Build Pack to "Dockerfile" with
+# Base Directory `/voting-app` to use the existing, tested Dockerfile.
+
+providers = ["python"]
+
+[variables]
+NIXPACKS_PYTHON_VERSION = "3.12"
+
+[phases.setup]
+nixPkgs = ["python312", "gcc"]
+
+[phases.install]
+cmds = [
+    "python -m venv --copies /opt/venv",
+    "/opt/venv/bin/pip install --upgrade pip",
+    "/opt/venv/bin/pip install -r voting-app/requirements.txt",
+]
+
+[start]
+# app.py reads PORT, HOST, FLASK_DEBUG, FLASK_SECRET_KEY, FLASK_ADMIN_USER,
+# FLASK_ADMIN_PASS, MAX_POLLS_PER_USER from the environment — set those in
+# the Coolify "Environment Variables" tab. FLASK_DEBUG must stay 0 in prod.
+cmd = "cd voting-app && /opt/venv/bin/python app.py"
