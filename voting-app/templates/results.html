@@ -4,6 +4,12 @@
 <h1>{{ poll.title }}</h1>
 {% if poll.description %}<p class="text-muted">{{ poll.description }}</p>{% endif %}
 
+{% if poll.is_open != "true" %}
+<div class="card" style="border-left: 4px solid #ef4444;">
+    <p style="margin: 0;">🔒 <strong>This poll is closed.</strong> Voting is no longer available — here are the results.</p>
+</div>
+{% endif %}
+
 <p class="text-muted mb-1">{{ votes|length }} vote{{ 's' if votes|length != 1 else '' }} cast</p>
 
 {% if results %}

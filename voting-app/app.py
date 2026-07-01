@@ -1,4 +1,5 @@
 import csv
+import json
 import os
 import secrets
 import threading
@@ -271,6 +272,77 @@ def seed_first_admin():
 seed_first_admin()
 
 
+# ============== APP SETTINGS ==============
+#
+# A tiny persisted key/value store for runtime-togglable settings (currently
+# just whether public self-service signup is open). Backed by
+# DATA_DIR/settings.json so an admin can flip it from the Settings page without
+# a redeploy. The environment variable supplies only the INITIAL default used
+# until the file is written; after that the stored value wins.
+
+
+def _env_bool(name, default):
+    val = os.environ.get(name)
+    if val is None:
+        return default
+    return val.strip().lower() in ("1", "true", "yes", "on")
+
+
+# Keys here define the full, known set of settings. Anything not listed is
+# ignored when reading/writing so a stale or hand-edited file can't inject
+# arbitrary keys.
+DEFAULT_SETTINGS = {
+    "signup_enabled": _env_bool("SIGNUP_ENABLED", True),
+}
+
+
+def _settings_path():
+    return Path(DATA_DIR) / "settings.json"
+
+
+def get_settings():
+    """Return the settings dict: defaults overlaid with any persisted values."""
+    with _csv_lock:
+        settings = dict(DEFAULT_SETTINGS)
+        path = _settings_path()
+        if path.exists():
+            try:
+                stored = json.loads(path.read_text(encoding="utf-8"))
+            except (ValueError, OSError):
+                stored = {}
+            if isinstance(stored, dict):
+                for key in DEFAULT_SETTINGS:
+                    if key in stored:
+                        settings[key] = stored[key]
+        return settings
+
+
+def save_settings(new_values):
+    """Merge and persist known settings keys. Returns the updated settings."""
+    with _csv_lock:
+        settings = get_settings()
+        for key in DEFAULT_SETTINGS:
+            if key in new_values:
+                settings[key] = new_values[key]
+        try:
+            _settings_path().write_text(
+                json.dumps(settings, indent=2), encoding="utf-8"
+            )
+        except OSError as e:
+            print(f"⚠️  Could not persist settings to {_settings_path()}: {e}")
+        return settings
+
+
+def signup_enabled():
+    return bool(get_settings().get("signup_enabled", True))
+
+
+@app.context_processor
+def _inject_settings():
+    """Expose `signup_enabled()` to templates (e.g. to hide the signup link)."""
+    return {"signup_enabled": signup_enabled}
+
+
 # ============== AUTH ==============
 
 
@@ -329,7 +401,19 @@ def admin_login():
 def signup():
     """Public self-service signup. Creates a non-admin account and logs the
     new user straight in. Validation matches `admin_users_create` so admins
-    and self-signups go through the same rules."""
+    and self-signups go through the same rules.
+
+    Gated by the `signup_enabled` setting (admin Settings page / SIGNUP_ENABLED
+    env). When off, both GET and POST are refused so the account store can't be
+    grown from the public route — admins can still create users directly."""
+    if not signup_enabled():
+        return (
+            render_template(
+                "admin_login.html",
+                error="Public sign-up is currently disabled. Ask an admin for an account.",
+            ),
+            403,
+        )
     if request.method == "POST":
         username = request.form.get("username", "").strip()
         password = request.form.get("password", "")
@@ -463,6 +547,27 @@ def admin_change_password():
             "admin_change_password.html", success="Password updated."
         )
     return render_template("admin_change_password.html")
+
+
+# ============== ADMIN SETTINGS ==============
+
+
+@app.route("/admin/settings", methods=["GET", "POST"])
+def admin_settings():
+    """Admin-only page for runtime-togglable app settings. Currently just the
+    public-signup switch (issues #11/#13); more can slot in by extending
+    DEFAULT_SETTINGS and this form."""
+    if not is_admin():
+        return redirect(url_for("admin_login"))
+    saved = False
+    if request.method == "POST":
+        # Unchecked checkboxes are absent from the form body, so a missing
+        # `signup_enabled` field means "off".
+        save_settings({"signup_enabled": request.form.get("signup_enabled") == "on"})
+        saved = True
+    return render_template(
+        "admin_settings.html", settings=get_settings(), saved=saved
+    )
 
 
 # ============== "SECURE" ROUTES ==============
@@ -816,6 +921,13 @@ def results(poll_id):
 @app.route("/")
 def home():
     return redirect(url_for("admin_login"))
+
+
+@app.route("/favicon.ico")
+def favicon():
+    """Browsers auto-request /favicon.ico; point it at the SVG we ship so the
+    tab gets an icon instead of a 404 (issue #5)."""
+    return redirect(url_for("static", filename="favicon.svg"))
 
 
 # ============== RUN ==============

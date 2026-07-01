@@ -19,8 +19,10 @@
         <button type="submit" class="btn-block mt-1">Login</button>
     </form>
 
+    {% if signup_enabled() %}
     <p class="mt-1" style="font-size: 0.875rem;">
         New here? <a href="{{ url_for('signup') }}">Create an account</a>.
     </p>
+    {% endif %}
 </div>
 {% endblock %}

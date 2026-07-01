@@ -1,0 +1,29 @@
+{% extends "base.html" %}
+{% block title %}Settings{% endblock %}
+{% block content %}
+<div class="header-row">
+    <h1>Settings</h1>
+    <a href="{{ url_for('admin_dashboard') }}" class="btn btn-secondary btn-small">← Back</a>
+</div>
+
+{% if saved %}<p style="color: green;">Settings saved.</p>{% endif %}
+
+<form method="POST">
+    <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+    <div class="card">
+        <label style="display: flex; align-items: center; gap: 0.5rem; cursor: pointer;">
+            <input type="checkbox" name="signup_enabled" style="width: auto;"
+                   {% if settings.signup_enabled %}checked{% endif %}>
+            <span>Allow public sign-up</span>
+        </label>
+        <p class="text-muted" style="font-size: 0.875rem; margin-top: 0.5rem;">
+            When off, the public <code>/signup</code> page is disabled and the
+            "Create an account" link is hidden. Admins can still create users
+            from the Users page. Defaults from the <code>SIGNUP_ENABLED</code>
+            environment variable until changed here.
+        </p>
+    </div>
+
+    <button type="submit" class="btn btn-block">Save Settings</button>
+</form>
+{% endblock %}
