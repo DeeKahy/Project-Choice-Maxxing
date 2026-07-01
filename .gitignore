@@ -61,3 +61,5 @@ logs/
 
 # Development data (optional - uncomment if you want to ignore local test data)
 # voting-app/data/*.csv
+# nix build output symlink
+result

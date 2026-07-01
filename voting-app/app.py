@@ -11,7 +11,11 @@ from werkzeug.security import check_password_hash, generate_password_hash
 
 app = Flask(__name__)
 
-DATA_DIR = "data"
+# Where the CSV-on-disk store lives. Defaults to a "data" dir next to this
+# file (the chdir below makes that resolve correctly). Override with an
+# ABSOLUTE path via the DATA_DIR env var when the app itself sits on a
+# read-only filesystem — e.g. the Nix-store OCI image points this at /data.
+DATA_DIR = os.environ.get("DATA_DIR", "data")
 # ADMIN_USER / ADMIN_PASS are now ONLY the bootstrap credentials used the
 # first time the app starts with no users in users.csv. After that, real
 # accounts live in data/users.csv with hashed passwords. Override via

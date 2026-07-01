@@ -63,6 +63,29 @@ If you prefer not to use Nix:
 
 The app includes Docker support with persistent data volumes. See the modified Dockerfile that preserves poll data between deployments.
 
+### Option A: Nix-built OCI image (no Dockerfile)
+
+The flake also produces a ready-to-run container image straight from the same
+package the dev shell uses — no Dockerfile to maintain. Pull the published
+image (built and pushed to GHCR by CI):
+
+```bash
+docker pull ghcr.io/deekahy/voting-app:latest
+docker run --rm -p 5000:5000 -v voting_data:/data ghcr.io/deekahy/voting-app:latest
+```
+
+…or build it yourself from source:
+
+```bash
+nix build .#dockerImage
+docker load < result          # or: podman load < result
+docker run --rm -p 5000:5000 -v voting_data:/data deekahy/voting-app:latest
+```
+
+The image is minimal/distroless (only the app's runtime closure — no shell, so
+`docker exec … sh` won't work) and writes its CSV store to `/data`, which you
+should back with a volume. It listens on port `5000`.
+
 ## Configuration
 
 The app reads configuration from environment variables:
@@ -76,6 +99,7 @@ The app reads configuration from environment variables:
 | `FLASK_ADMIN_USER` | `admin` | Username seeded on first launch when `data/users.csv` is empty |
 | `FLASK_ADMIN_PASS` | `admin` | Password seeded on first launch. **Change this immediately after first login.** |
 | `MAX_POLLS_PER_USER` | `50` | Per-user poll cap. Admins are exempt. |
+| `DATA_DIR` | `data` | Directory for the CSV store. The Nix OCI image sets this to `/data` (an absolute, writable path) since the app itself sits on a read-only filesystem. |
 
 ## Accounts
 

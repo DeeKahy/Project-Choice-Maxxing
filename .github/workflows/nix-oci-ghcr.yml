@@ -1,0 +1,66 @@
+name: Build and Push Nix OCI Image to GHCR
+
+# Builds the container image straight from the flake (no Dockerfile) and
+# pushes it to the GitHub Container Registry, so Docker users can just
+#   docker pull ghcr.io/deekahy/voting-app:latest
+# and never touch Nix.
+
+on:
+  push:
+    branches:
+      - main
+  workflow_dispatch:
+
+jobs:
+  test:
+    # Same gate as the Docker Hub workflow: never publish an image built from
+    # a regression pytest would have caught.
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.12"
+          cache: pip
+      - name: Install dependencies
+        working-directory: voting-app
+        run: pip install -r requirements.txt
+      - name: Run pytest
+        working-directory: voting-app
+        run: python -m pytest
+
+  build-and-push:
+    needs: test
+    runs-on: ubuntu-latest
+    permissions:
+      contents: read
+      packages: write
+
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - name: Install Nix
+        uses: cachix/install-nix-action@v27
+        with:
+          extra_nix_config: |
+            experimental-features = nix-command flakes
+
+      - name: Build OCI image
+        run: nix build .#dockerImage
+
+      - name: Log in to GHCR
+        uses: docker/login-action@v3
+        with:
+          registry: ghcr.io
+          username: ${{ github.actor }}
+          password: ${{ secrets.GITHUB_TOKEN }}
+
+      - name: Load, tag and push
+        run: |
+          docker load < result
+          IMAGE=ghcr.io/deekahy/voting-app
+          docker tag deekahy/voting-app:latest "$IMAGE:latest"
+          docker tag deekahy/voting-app:latest "$IMAGE:${GITHUB_SHA}"
+          docker push "$IMAGE:latest"
+          docker push "$IMAGE:${GITHUB_SHA}"
