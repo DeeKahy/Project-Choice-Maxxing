@@ -60,8 +60,65 @@
           echo "✅ Syntax check passed"
         '';
 
+        # The app packaged into the Nix store: source + templates + static,
+        # plus a `voting-app` launcher that runs it with the pinned Python env.
+        # This is the single source of truth the OCI image is built from.
+        votingApp = pkgs.stdenv.mkDerivation {
+          pname = "voting-app";
+          version = "1.0.0";
+          src = ./voting-app;
+          nativeBuildInputs = [ pkgs.makeWrapper ];
+          dontBuild = true;
+          installPhase = ''
+            runHook preInstall
+            mkdir -p $out/share/voting-app
+            # Ship code + assets, but NOT the checked-in data/ dir — the running
+            # container writes its CSV store to a fresh, writable /data instead.
+            cp -r app.py algorithms.py templates static $out/share/voting-app/
+            makeWrapper ${pythonEnv}/bin/python $out/bin/voting-app \
+              --add-flags "$out/share/voting-app/app.py"
+            runHook postInstall
+          '';
+        };
+
+        # A ready-to-run Docker/OCI image built straight from the flake — no
+        # Dockerfile. Consumers `docker pull` / `docker run`; they never touch
+        # Nix. Layered so shared deps (Python, glibc) dedupe across rebuilds.
+        dockerImage = pkgs.dockerTools.buildLayeredImage {
+          name = "deekahy/voting-app";
+          tag = "latest";
+          # cacert so any outbound TLS works; the app itself is self-contained.
+          contents = [ votingApp pkgs.cacert ];
+          config = {
+            Cmd = [ "${votingApp}/bin/voting-app" ];
+            ExposedPorts = { "5000/tcp" = { }; };
+            # DATA_DIR points at a writable volume because the app's own dir
+            # lives in the read-only Nix store. HOST/PORT match the Dockerfile.
+            Env = [
+              "DATA_DIR=/data"
+              "HOST=0.0.0.0"
+              "PORT=5000"
+              "FLASK_ENV=production"
+              "FLASK_DEBUG=0"
+            ];
+            WorkingDir = "/data";
+            Volumes = { "/data" = { }; };
+          };
+          # Create the mount point (and a world-writable /tmp) inside the image.
+          extraCommands = ''
+            mkdir -p data tmp
+            chmod 1777 tmp
+          '';
+        };
+
       in
       {
+        packages = {
+          default = votingApp;
+          voting-app = votingApp;
+          inherit dockerImage;
+        };
+
         devShells.default = pkgs.mkShell {
           name = "voting-app-dev";
           
